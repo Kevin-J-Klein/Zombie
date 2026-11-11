@@ -36,6 +36,7 @@ var extraction_open := false
 var gnomes := 0
 
 var tank_seen := false
+var used_revive := false   # fuer den Auftrag "ohne Zweite Chance"
 
 var menu_open := false
 var shop_block_t := 0.0
@@ -60,6 +61,12 @@ func _ready() -> void:
 	player.camera.limit_right = int(b.end.x)
 	player.camera.limit_bottom = int(b.end.y)
 	player.camera.reset_smoothing()
+	# Startwaffe aus dem Dorf (im Haus gewaehlt) statt der Pistole
+	var start_weapon := Save.start_weapon()
+	if start_weapon != "pistol":
+		player.weapons.clear()
+		player.give_weapon(start_weapon)
+	Save.begin_run()
 
 	hud = Hud.new()
 	hud.name = "HUD"
@@ -89,7 +96,8 @@ func _process(delta: float) -> void:
 			if to_spawn > 0:
 				to_spawn -= 1
 			spawn_t = maxf(0.3, 2.0 - round_num * 0.15) * (0.5 if defending else 1.0)
-		if to_spawn == 0 and alive == 0 and not defending:
+		# neu zaehlen: der letzte Zombie kann gerade eben erst erschienen sein
+		if to_spawn == 0 and zombie_count() == 0 and not defending:
 			_end_round()
 	else:
 		intermission_t -= delta
@@ -117,12 +125,16 @@ func _start_round() -> void:
 	spawn_t = 1.0
 	powerups_this_round = 0
 	hud.show_round(round_num)
+	Save.contract_event("round", round_num)
+	if not used_revive:
+		Save.contract_event("round_no_revive", round_num)
 
 
 func _end_round() -> void:
 	in_round = false
 	intermission_t = 6.0
 	announce("Runde %d überstanden" % round_num)
+	Save.write()   # automatisch speichern (Auftragsfortschritt)
 
 
 func _spawn_zombie() -> void:
@@ -137,6 +149,11 @@ func _spawn_zombie() -> void:
 
 func on_zombie_killed(z: Zombie, melee: bool, award: bool) -> void:
 	kills += 1
+	Save.contract_event("kill")
+	if melee:
+		Save.contract_event("melee_kill")
+	if z.tank:
+		Save.contract_event("tank_kill")
 	if not award:
 		return
 	add_points((130 if melee else 60) + (G.TANK_KILL_BONUS if z.tank else 0))
@@ -156,6 +173,12 @@ func add_points(n: int) -> void:
 		n *= 2
 	points += n
 	total_points += n
+	Save.contract_event("points", total_points)
+
+
+## Ein Brett wurde an einer Barrikade angebracht (zaehlt fuer Auftraege)
+func on_plank_repaired() -> void:
+	Save.contract_event("repair")
 
 
 func try_spend(cost: int) -> bool:
@@ -181,6 +204,8 @@ func give_perk(id: String) -> void:
 	if perks.has(id):
 		return
 	perks.append(id)
+	if id == "revive":
+		used_revive = true
 	match id:
 		"health":
 			player.set_max_hp(250.0)
@@ -301,6 +326,7 @@ func _open_extraction() -> void:
 
 func gnome_shot(pos: Vector2) -> void:
 	gnomes += 1
+	Save.contract_event("gnomes", gnomes)
 	fx_ring(pos, 10.0, Color("#ffd84a"))
 	if gnomes < 3:
 		announce("Gartenzwerg erwischt (%d/3)" % gnomes)
@@ -348,6 +374,10 @@ func _finish(victory: bool) -> void:
 	player.dead = not victory
 	player.input_enabled = false
 	G.last_result = {"won": victory, "round": round_num, "kills": kills, "points": total_points, "time": time_played}
+	# Schrott, Rekorde und Auftraege fuer das Dorf
+	if victory:
+		Save.contract_event("escape")
+	G.last_result.merge(Save.finish_run(G.last_result, gnomes >= 3))
 	if not victory:
 		player.play_death()
 	hud.show_end(victory)

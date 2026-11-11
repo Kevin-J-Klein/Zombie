@@ -16,12 +16,13 @@ Erzeugt in art/pack/:
   guns/            Waffen (mit Haenden) und Hotbar-Symbole, je Waffe eingefaerbt
   props/           Kisten, Faesser, Baeume, Automaten, Tueren ...
   ui/              HUD- und Menue-Grafiken, schon 3x vergroessert (fuer scharfe Pixel)
+  village/         Das Dorf (Hauptmenue): Pflaster-Kacheln, Haus, Shop, Auftragsbrett, Wagen, Deko
 """
 import colorsys
 import json
 import os
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 PACK = os.path.join(ROOT, "art", "asset_pack")
@@ -479,6 +480,204 @@ def ui():
     save(upscale(b), "ui/button_hover.png")
 
 
+# ------------------------------------------------------------------ Dorf (Hauptmenue)
+
+def _paste(dst, src, x, y):
+    dst.alpha_composite(src, (x, y))
+
+
+def _facade(dst, color, x, y, w):
+    """Hausfront: 3 Kachelreihen aus dem Gebaeude-Tileset, w Kacheln breit."""
+    sheet = load("Tiles/Buildings/Buildings_%s_TileSet.png" % color)
+    for j, row in enumerate((3, 4, 5)):
+        for i in range(w):
+            cx = 4 if i == 0 else (9 if i == w - 1 else (5, 6, 8)[i % 3])
+            _paste(dst, crop_tile(sheet, cx, row), x + i * T, y + j * T)
+
+
+def village_house():
+    """Wohnhaus: rotes Ziegeldach (5 Reihen), weisse Front, Tuer und zwei Fenster."""
+    w, roof_rows = 7, (0, 1, 2, 3, 4)
+    img = Image.new("RGBA", (w * T, 8 * T), (0, 0, 0, 0))
+    roof = load("Tiles/Roof_TileSet.png")
+    for j, ry in enumerate(roof_rows):
+        for i in range(w):
+            cx = 8 + (0 if i == 0 else (2 if i == w - 1 else 1))
+            _paste(img, crop_tile(roof, cx, ry), i * T, j * T)
+    _facade(img, "white", 0, 5 * T, w)
+    b = "Objects/Buildings/"
+    _paste(img, load("Objects/Windows/Window_3_wood.png"), 14, 97)
+    _paste(img, load("Objects/Windows/Window_4_wood.png"), 84, 97)
+    _paste(img, load(b + "Door_1_Beige.png"), 48, 97)
+    _paste(img, load(b + "Air-vent_1.png"), 80, 14)
+    return img
+
+
+def village_shop():
+    """Laden: Flachdach, beige Front, Markise, Eingang und zwei Automaten."""
+    w = 9
+    img = Image.new("RGBA", (w * T, 6 * T + 2), (0, 0, 0, 0))
+    sheet = load("Tiles/Buildings/Buildings_beige_TileSet.png")
+    for j in range(3):
+        for i in range(w):
+            cx = 5 if i == 0 else (8 if i == w - 1 else 6)
+            _paste(img, crop_tile(sheet, cx, j), i * T, j * T)
+    _facade(img, "beige", 0, 3 * T, w)
+    b = "Objects/Buildings/"
+    _paste(img, load(b + "HVAC.png"), 16, 10)
+    _paste(img, load(b + "Antenna_1.png"), 100, 4)
+    _paste(img, load("Objects/Windows/Window_15_Beige.png"), 14, 66)
+    _paste(img, load("Objects/Windows/Window_16_Beige.png"), 116, 66)
+    _paste(img, load(b + "Enterance_Green.png"), 57, 69)
+    _paste(img, load(b + "Awning_orange_3.png"), 40, 50)
+    _paste(img, load("Objects/Vending-machine_Blue.png"), 30, 74)
+    _paste(img, load("Objects/Vending-machine_Red.png"), 98, 74)
+    return img
+
+
+def village_board():
+    """Auftragsbrett: im Pack gibt es keines, daher in den Pack-Farben gezeichnet."""
+    img = Image.new("RGBA", (32, 34), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    dark, wood, wood2 = (42, 31, 45, 255), (128, 84, 64, 255), (96, 60, 48, 255)
+    paper, paper2 = (240, 230, 200, 255), (214, 200, 170, 255)
+    x, y = 2, 1
+    for px in (x + 3, x + 24):
+        d.rectangle([px - 1, y + 8, px + 2, y + 32], fill=dark)
+        d.rectangle([px, y + 9, px + 1, y + 31], fill=wood2)
+    d.rectangle([x - 2, y - 1, x + 29, y + 3], fill=dark)
+    d.rectangle([x - 1, y, x + 28, y + 2], fill=(150, 60, 56, 255))
+    d.rectangle([x, y + 4, x + 27, y + 22], fill=dark)
+    d.rectangle([x + 1, y + 5, x + 26, y + 21], fill=wood)
+    d.line([x + 1, y + 13, x + 26, y + 13], fill=wood2)
+    for nx, ny, col in [(x + 3, y + 6, paper), (x + 11, y + 7, paper2), (x + 19, y + 6, paper),
+                        (x + 6, y + 14, paper2), (x + 15, y + 14, paper)]:
+        d.rectangle([nx, ny, nx + 5, ny + 5], fill=col)
+        d.point((nx + 2, ny), fill=(200, 60, 50, 255))
+        d.line([nx + 1, ny + 2, nx + 4, ny + 2], fill=(150, 140, 120, 255))
+        d.line([nx + 1, ny + 4, nx + 3, ny + 4], fill=(150, 140, 120, 255))
+    return img
+
+
+def village_tiles():
+    """Kacheln nur fuers Dorf (Gras und Asphalt kommen aus tiles.png):
+    Zeile 0: Pflaster (4 Varianten), Asphalt mit Mittelstrich, 3x Gras mit Blumen/Bueschel
+    Zeile 1: Randsteine um den Platz: NW, N, NO, W, O, SW, S, SO (auf Pflaster gelegt)"""
+    bg = load("Tiles/Background_Green_TileSet.png")
+    atlas = Image.new("RGBA", (8 * T, 2 * T), (0, 0, 0, 0))
+    p = bg.crop((100, 5, 100 + T, 5 + T))   # sauberes Pflaster (wie die Fliesen im Level), gespiegelt fuer 4 Varianten
+    paving = [p, p.transpose(Image.FLIP_LEFT_RIGHT), p.transpose(Image.FLIP_TOP_BOTTOM), p.transpose(Image.ROTATE_180)]
+    for i, t in enumerate(paving):
+        _paste(atlas, t, i * T, 0)
+    road = crop_tile(bg, 5, 9).copy()
+    ImageDraw.Draw(road).rectangle([2, 7, 13, 8], fill=(196, 190, 170, 255))
+    _paste(atlas, road, 4 * T, 0)
+    for i, c in enumerate([(3, 1), (4, 1), (5, 1)]):
+        _paste(atlas, crop_tile(bg, *c), (5 + i) * T, 0)
+    ring = [(11, 0), (12, 0), (13, 0), (11, 1), (13, 1), (11, 2), (12, 2), (13, 2)]
+    for i, c in enumerate(ring):
+        t = paving[0].copy()
+        t.alpha_composite(crop_tile(bg, *c))
+        _paste(atlas, t, i * T, T)
+    return atlas
+
+
+def village_trader():
+    """Haendler: die Spielfigur (steht, Blick nach unten) mit Helm aus dem Pack."""
+    body = frames_of("Character/Main/Idle/Character_down_idle-Sheet6.png", 6)
+    helm = frames_of("Character/Helmet/Helmet_Up-and-Down_Idle-and-Run-Sheet6.png", 6)
+    cw, ch = 14, 20
+    strip = Image.new("RGBA", (cw * 6, ch), (0, 0, 0, 0))
+    for i in range(6):
+        _paste(strip, body[i], i * cw, ch - body[i].height)
+        _paste(strip, helm[i], i * cw + 1, ch - body[i].height - 3)
+    rel = save(strip, "village/trader_idle.png")
+    ANIMS["trader"] = {"idle_down": {"file": "res://art/pack/" + rel, "w": cw, "h": ch, "frames": 6,
+                                     "fps": 6.0, "loop": True}}
+
+
+def _icon(draw_fn, size):
+    img = Image.new("RGBA", size, (0, 0, 0, 0))
+    draw_fn(ImageDraw.Draw(img))
+    return upscale(img)
+
+
+def village_icons():
+    """Kleine Symbole fuer die Dorf-Menues (3x vergroessert wie der Rest der Oberflaeche)."""
+    save(upscale(load("Objects/Metal-Plates.png")), "ui/scrap.png")
+    ink, bone, off, steel = (42, 31, 45, 255), (236, 226, 200, 255), (104, 96, 110, 255), (170, 165, 175, 255)
+
+    def skull(col):
+        def fn(d):
+            d.rectangle([1, 0, 5, 0], fill=col)
+            d.rectangle([0, 1, 6, 4], fill=col)
+            d.rectangle([1, 5, 5, 6], fill=col)
+            for p in [(2, 2), (4, 2), (2, 3), (4, 3), (3, 6)]:
+                d.point(p, fill=ink)
+        return fn
+
+    def lock(d):
+        d.rectangle([1, 0, 5, 3], fill=ink)
+        d.rectangle([2, 1, 4, 3], fill=(0, 0, 0, 0))
+        d.rectangle([0, 3, 6, 8], fill=ink)
+        d.rectangle([1, 4, 5, 7], fill=steel)
+        d.rectangle([3, 5, 3, 6], fill=ink)
+
+    def gear(d):
+        d.ellipse([2, 2, 10, 10], fill=bone)
+        for x, y in [(6, 0), (6, 11), (0, 6), (11, 6), (1, 1), (10, 1), (1, 10), (10, 10)]:
+            d.rectangle([x, y, x + 1, y + 1], fill=bone)
+        d.rectangle([1, 5, 11, 6], fill=bone)
+        d.rectangle([5, 1, 6, 11], fill=bone)
+        d.ellipse([4, 4, 7, 7], fill=ink)
+
+    save(_icon(skull(bone), (7, 7)), "ui/skull.png")
+    save(_icon(skull(off), (7, 7)), "ui/skull_off.png")
+    save(_icon(lock, (7, 9)), "ui/lock.png")
+    save(_icon(gear, (13, 13)), "ui/gear.png")
+
+
+def village():
+    o = "Objects/"
+    n = o + "Nature/Green/"
+    f = o + "Nature/Flowers_Mashrooms_Other-nature-stuff/"
+    w = o + "Buildable/Reinforced/Reinforced_wooden-wall_"
+    save(village_tiles(), "village/tiles.png")
+    save(village_house(), "village/house.png")
+    save(village_shop(), "village/shop.png")
+    save(village_board(), "village/board.png")
+    village_trader()
+    village_icons()
+    copies = {
+        "car.png": o + "Vehicles/Normal/Car_4/Car_4_Yellow.png",
+        "fence.png": w + "Horizontal.png",
+        "fence_post.png": w + "Vertical_For-gate.png",
+        "lamp.png": o + "Street-Light_3_Down.png",
+        "bench.png": o + "Bench_1_down.png",
+        "bin.png": o + "Garbage-Bin_1.png",
+        "pallet.png": o + "Pallet_1.png",
+        "barrel.png": o + "Barrel_rust_blue_1.png",
+        "barrel_red.png": o + "Barrel_red_1.png",
+        "tire.png": o + "Tire_1.png",
+        "cone.png": o + "Traffic-cone.png",
+        "ammo_crate.png": o + "Pickable/Ammo-crate_Green.png",
+        "bush_0.png": n + "Bush_1_Green.png",
+        "bush_1.png": n + "Bush_2_Green.png",
+        "tree_0.png": n + "Tree_5_Big_Green.png",
+        "tree_1.png": n + "Tree_3_Normal_Green.png",
+        "tree_2.png": n + "Tree_1_Spruce_Green.png",
+        "tree_3.png": n + "Tree_6_Pine_Big_Green.png",
+        "tree_4.png": n + "Tree_7_Birch_Green.png",
+        "tree_5.png": n + "Tree_9_Small-oak_Green.png",
+        "flowers_0.png": f + "Flowers_1_red.png",
+        "flowers_1.png": f + "Flowers_2_yellow.png",
+        "flowers_2.png": f + "Flowers_3_purple.png",
+        "stump.png": f + "Stump_1.png",
+    }
+    for dst, src in copies.items():
+        save(load(src), "village/" + dst)
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     save(floors(), "tiles.png")
@@ -487,6 +686,7 @@ def main():
     guns()
     props()
     ui()
+    village()
     with open(os.path.join(OUT, "anims.json"), "w") as f:
         json.dump(ANIMS, f, indent=1, sort_keys=True)
     print("Fertig: %d Animationen/Eintraege in art/pack/anims.json" % sum(len(v) for v in ANIMS.values()))

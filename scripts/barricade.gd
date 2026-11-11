@@ -67,4 +67,5 @@ func hold_interact(_player: Node, delta: float) -> void:
 		repair_t = 0.0
 		planks += 1
 		game.add_points(10)
+		game.on_plank_repaired()
 		queue_redraw()

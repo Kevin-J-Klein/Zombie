@@ -19,6 +19,8 @@ config/icon="res://art/icon.png"
 [autoload]
 
 G="*res://scripts/globals.gd"
+Save="*res://scripts/save.gd"
+Fade="*res://scripts/fade.gd"
 
 [display]
 

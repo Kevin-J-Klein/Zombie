@@ -99,6 +99,16 @@
    "w": 34
   }
  },
+ "trader": {
+  "idle_down": {
+   "file": "res://art/pack/village/trader_idle.png",
+   "fps": 6.0,
+   "frames": 6,
+   "h": 20,
+   "loop": true,
+   "w": 14
+  }
+ },
  "weapons": {
   "dmr": {
    "angle": 0.0,

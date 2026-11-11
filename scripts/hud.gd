@@ -32,6 +32,9 @@ var shop_points: Label
 var shop_items: Array[Dictionary] = []
 var pause_panel: PanelContainer
 var end_panel: PanelContainer
+var leave_button: Button
+var contract_panel: PanelContainer
+var contract_rows: Array[Dictionary] = []
 var announce_t := 0.0
 var slot_normal := G.pack_cell(false)
 var slot_selected := G.pack_cell(true)
@@ -58,6 +61,7 @@ func setup(p_game: Node) -> void:
 	_build_shop()
 	_build_pause()
 	_build_end()
+	Save.contract_done.connect(_on_contract_done)
 
 
 # ------------------------------------------------------------------ Bausteine
@@ -193,6 +197,41 @@ func _build_points_and_objective() -> void:
 	v.add_child(objective_label)
 	o.add_child(v)
 	box.add_child(o)
+	_build_contracts(box)
+
+
+## Aktive Auftraege vom Auftragsbrett im Dorf: Name, Stand und Balken.
+func _build_contracts(box: VBoxContainer) -> void:
+	var active: Array = Save.active_contracts()
+	if active.is_empty():
+		return
+	contract_panel = PanelContainer.new()
+	contract_panel.add_theme_stylebox_override("panel", G.panel_style(Color(0.17, 0.11, 0.21, 0.78), Color("#c3b7a4"), 3))
+	contract_panel.size_flags_horizontal = Control.SIZE_SHRINK_END
+	contract_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 2)
+	v.custom_minimum_size = Vector2(300, 0)
+	v.add_child(_label("AUFTRÄGE", 12, Color("#e88040"), false))
+	for c: Dictionary in active:
+		var def: Dictionary = HubData.CONTRACTS[c["id"]]
+		var row := HBoxContainer.new()
+		var name_l := _label(def["name"], 15, Color.WHITE, false)
+		name_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(name_l)
+		var count := _label("", 15, Color.WHITE, false)
+		row.add_child(count)
+		v.add_child(row)
+		var bar := _bar(Color("#e88040"), 300, 8)
+		bar.max_value = def["target"]
+		v.add_child(bar)
+		contract_rows.append({"contract": c, "target": def["target"], "count": count, "bar": bar, "done": false})
+	contract_panel.add_child(v)
+	box.add_child(contract_panel)
+
+
+func _on_contract_done(def: Dictionary) -> void:
+	announce("Auftrag erfüllt: %s" % def["name"], "+%d Schrott – Belohnung am Auftragsbrett im Dorf abholen" % def["reward"])
 
 
 func _build_round() -> void:
@@ -328,11 +367,12 @@ func _build_pause() -> void:
 	v.add_child(spacer)
 	v.add_child(_button("Weiter", _toggle_pause))
 	v.add_child(_button("Neustart", _restart))
-	v.add_child(_button("Hauptmenü", _to_menu))
+	leave_button = _button("Zurück ins Dorf", _leave_run)
+	v.add_child(leave_button)
 
 
 func _build_end() -> void:
-	var pv := _menu_panel(460, 400)
+	var pv := _menu_panel(460, 480)
 	end_panel = pv[0]
 
 
@@ -403,6 +443,16 @@ func _process(delta: float) -> void:
 
 	if shop_panel.visible:
 		shop_points.text = "Punkte: %d" % game.points
+
+	for r: Dictionary in contract_rows:
+		var c: Dictionary = r["contract"]
+		var done: bool = c["state"] == "done"
+		r["count"].text = "erfüllt" if done else "%d/%d" % [c["progress"], r["target"]]
+		r["bar"].value = c["progress"]
+		if done and not r["done"]:
+			r["done"] = true
+			r["count"].add_theme_color_override("font_color", Color("#8fd88a"))
+			r["bar"].get_theme_stylebox("fill").bg_color = Color("#8fd88a")
 
 
 func announce(text: String, sub := "") -> void:
@@ -478,18 +528,29 @@ func _toggle_pause() -> void:
 	var tree := get_tree()
 	tree.paused = not tree.paused
 	pause_panel.visible = tree.paused
+	leave_button.text = "Zurück ins Dorf"
 	Input.set_default_cursor_shape(Input.CURSOR_ARROW if tree.paused else Input.CURSOR_CROSS)
 
 
 func _restart() -> void:
+	if not game.over:
+		Save.abort_run()
 	get_tree().paused = false
 	get_tree().reload_current_scene()
 
 
-func _to_menu() -> void:
-	get_tree().paused = false
+## Partie aus der Pause verlassen: erst nachfragen, weil es dafuer keinen Schrott gibt.
+func _leave_run() -> void:
+	if leave_button.text.begins_with("Zurück"):
+		leave_button.text = "Sicher? Kein Schrott für diese Partie"
+		return
+	Save.abort_run()
+	_to_village()
+
+
+func _to_village() -> void:
 	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
-	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+	Fade.to_village()
 
 
 # ------------------------------------------------------------------ Ende
@@ -510,10 +571,19 @@ func show_end(victory: bool) -> void:
 	var stats := _label("Runde:  %d\nKills:  %d\nPunkte gesamt:  %d\nZeit:  %d:%02d" % [r["round"], r["kills"], r["points"], t / 60, t % 60], 20, TEXT, false)
 	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(stats)
+	# Schrott fuers Dorf und neue Rekorde
+	var scrap := _label("+ %s Schrott" % HubData.num(r.get("scrap", 0)), 24, Color("#f2c230"), false)
+	scrap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(scrap)
+	var records: Array = r.get("records", [])
+	if not records.is_empty():
+		var rec := _label("Neuer Rekord:  " + ",  ".join(PackedStringArray(records)), 16, Color("#8fd88a"), false)
+		rec.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		v.add_child(rec)
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(spacer)
 	v.add_child(_button("Nochmal spielen", _restart))
-	v.add_child(_button("Hauptmenü", _to_menu))
+	v.add_child(_button("Zurück ins Dorf", _to_village))
 	end_panel.visible = true
 	get_tree().paused = true
