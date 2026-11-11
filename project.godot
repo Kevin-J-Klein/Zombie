@@ -1,0 +1,36 @@
+; Engine configuration file.
+; Wird von Godot verwaltet - am besten ueber Projekt > Projekteinstellungen aendern.
+
+config_version=5
+
+[application]
+
+config/name="Zombie Game"
+config/description="Top-down Zombie-Wellen-Survival im Pixel-Look"
+run/main_scene="res://scenes/main_menu.tscn"
+config/features=PackedStringArray("GL Compatibility")
+config/icon="res://art/icon.png"
+
+[autoload]
+
+G="*res://scripts/globals.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[layer_names]
+
+2d_physics/layer_1="Welt"
+2d_physics/layer_2="Spieler-Sperre"
+2d_physics/layer_3="Trefferzonen"
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=0
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.09, 0.13, 0.09, 1)
