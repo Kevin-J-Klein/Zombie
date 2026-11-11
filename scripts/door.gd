@@ -27,10 +27,12 @@ func setup(p_game: Node, p_level: Node, p_id: String, p_cells: Array) -> void:
 	body.collision_layer = G.L_WORLD
 	body.collision_mask = 0
 	add_child(body)
+	# Holztor aus dem Pack: liegt die Tuer in einer senkrechten Wand, die schmalen Bretter
+	var vertical := cells.size() > 1 and cells[0].x == cells[1].x
 	for c in cells:
 		var local: Vector2 = level.cell_center(c) - position
 		var s := Sprite2D.new()
-		s.texture = preload("res://art/door.png")
+		s.texture = preload("res://art/pack/props/door_v.png") if vertical else preload("res://art/pack/props/door_h.png")
 		s.position = local
 		add_child(s)
 		var shape := CollisionShape2D.new()

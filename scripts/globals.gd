@@ -11,6 +11,18 @@ const L_HURT := 4       # Trefferzonen der Zombies
 const START_POINTS := 500
 const MAX_ZOMBIES_ALIVE := 24
 
+## Panzer-Zombie (der grosse Zombie aus dem Asset-Pack): langsam, zaeh, schlaegt hart zu.
+## Ab TANK_FROM_ROUND mit TANK_CHANCE_PER_ROUND mehr Wahrscheinlichkeit je Runde, hoechstens TANK_MAX_CHANCE.
+const TANK_FROM_ROUND := 4
+const TANK_CHANCE_PER_ROUND := 0.04
+const TANK_MAX_CHANCE := 0.2
+const TANK_HP_MULT := 4.0
+const TANK_SPEED := 20.0
+const TANK_DAMAGE := 80.0
+const TANK_WINDUP := 0.55       # laenger ausholen als normale Zombies (0.3 s): Zeit zum Ausweichen
+const TANK_TEAR_TIME := 0.8     # reisst Bretter schneller ab (normal 1.3 s)
+const TANK_KILL_BONUS := 140    # zusaetzlich zu den normalen Kill-Punkten
+
 ## Waffen. damage = Schaden pro Kugel, rate = Sekunden zwischen Schuessen,
 ## pierce = wie viele Zombies eine Kugel durchschlaegt, box = nur aus der Mystery-Box.
 const WEAPONS := {
@@ -47,7 +59,7 @@ const PERKS := {
 }
 
 const POWERUPS := {
-	"max_ammo": {"name": "Max. Munition", "tex": "res://art/pu_max_ammo.png"},
+	"max_ammo": {"name": "Max. Munition", "tex": "res://art/pack/props/pu_max_ammo.png"},
 	"insta_kill": {"name": "Sofort-Kill", "tex": "res://art/pu_insta_kill.png"},
 	"double_points": {"name": "Doppelte Punkte", "tex": "res://art/pu_double_points.png"},
 	"nuke": {"name": "Bombe", "tex": "res://art/pu_nuke.png"},
@@ -59,12 +71,22 @@ const COST_UPGRADE := [5000, 10000, 20000]  # pro Upgrade-Stufe
 const MAX_WEAPON_LEVEL := 3
 const DEFEND_SECONDS := 90.0
 
+## Farben der Oberflaeche (aus der Palette des Asset-Packs)
+const UI_TEXT := Color("#efe3c8")        # heller Text auf den dunklen Panels
+const UI_INK := Color("#2c1d35")         # dunkler Text auf den hellen Knoepfen
+const UI_INK_OFF := Color("#4f4452")
+
 ## Statistik der letzten Partie (fuer den End-Bildschirm)
 var last_result := {}
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# Mauszeiger aus dem Pack (Spitze oben links); im Spiel bleibt das Fadenkreuz
+	# Als Image uebergeben: eine Textur wuerde vom Betriebssystem-Cursor bis nach dem
+	# Grafik-Server festgehalten (Fehlermeldung beim Beenden)
+	var cursor: Texture2D = load("res://art/pack/ui/cursor.png")
+	Input.set_custom_mouse_cursor(cursor.get_image(), Input.CURSOR_ARROW, Vector2(1, 1))
 	_keys("move_left", [KEY_A, KEY_LEFT])
 	_keys("move_right", [KEY_D, KEY_RIGHT])
 	_keys("move_up", [KEY_W, KEY_UP])
@@ -81,6 +103,10 @@ func _ready() -> void:
 	_mouse("melee", MOUSE_BUTTON_RIGHT)
 	_mouse("swap", MOUSE_BUTTON_WHEEL_UP)
 	_mouse("swap", MOUSE_BUTTON_WHEEL_DOWN)
+
+
+func _exit_tree() -> void:
+	SheetAnims.clear()
 
 
 func _keys(action: String, keys: Array) -> void:
@@ -107,8 +133,19 @@ func weapon_name(id: String, level: int) -> String:
 	return n
 
 
+## Waffe in der Hand (mit Haenden, zeigt nach rechts)
 func weapon_tex(id: String) -> Texture2D:
-	return load("res://art/gun_%s.png" % id)
+	return load(SheetAnims.weapon(id)["texture"])
+
+
+## Waffe als Symbol (Hotbar, Wandkauf)
+func weapon_icon(id: String) -> Texture2D:
+	return load(SheetAnims.weapon(id)["icon"])
+
+
+## Patronen-Symbol neben der Munitionsanzeige
+func bullet_icon(id: String) -> Texture2D:
+	return load("res://art/pack/ui/bullet_%s.png" % SheetAnims.weapon(id)["bullet"])
 
 
 ## Zombies pro Runde (aehnlich wie im Vorbild: langsam steigend)
@@ -119,13 +156,20 @@ func zombies_for_round(r: int) -> int:
 	return int(24 + (r - 5) * 5 + pow(r - 5, 1.5))
 
 
+## Wahrscheinlichkeit, dass ein neuer Zombie in Runde r ein Panzer-Zombie ist
+func tank_chance(r: int) -> float:
+	if r < TANK_FROM_ROUND:
+		return 0.0
+	return minf(TANK_CHANCE_PER_ROUND * (r - TANK_FROM_ROUND + 1), TANK_MAX_CHANCE)
+
+
 func zombie_health(r: int) -> float:
 	if r < 10:
 		return 150.0 + 100.0 * (r - 1)
 	return 950.0 * pow(1.1, r - 9)
 
 
-## Einheitlicher Look fuer UI-Panels (warmes Pergament wie in der Stilvorlage)
+## Flaches Panel (fuer halbtransparente Kaesten ueber der Spielwelt)
 func panel_style(bg := Color("#f3d9a4"), border := Color("#7a4a21"), width := 3) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = bg
@@ -136,12 +180,45 @@ func panel_style(bg := Color("#f3d9a4"), border := Color("#7a4a21"), width := 3)
 	return sb
 
 
+## 9-Teile-Box aus einer Pack-Grafik. Die Grafiken in art/pack/ui sind schon 3x
+## vergroessert, die Raender (margin) sind daher in diesen grossen Pixeln angegeben.
+func tex_style(path: String, margin: float, content := -1.0) -> StyleBoxTexture:
+	var sb := StyleBoxTexture.new()
+	sb.texture = load(path)
+	sb.set_texture_margin_all(margin)
+	sb.set_content_margin_all(margin if content < 0.0 else content)
+	return sb
+
+
+## Grosses Panel (Shop, Pause, Ende, Punkte) im Stil des Pack-Inventars
+func pack_panel() -> StyleBoxTexture:
+	return tex_style("res://art/pack/ui/panel.png", 18.0, 20.0)
+
+
+## Hotbar-Feld; gewaehlt = heller Rahmen
+func pack_cell(selected: bool) -> StyleBoxTexture:
+	return tex_style("res://art/pack/ui/cell_chosen.png" if selected else "res://art/pack/ui/cell.png", 9.0, 9.0)
+
+
+func _button_box(path: String, bottom: float, pressed := false) -> StyleBoxTexture:
+	var sb := tex_style(path, 15.0)
+	sb.texture_margin_bottom = bottom
+	sb.content_margin_left = 18.0
+	sb.content_margin_right = 18.0
+	sb.content_margin_top = 10.0 if pressed else 6.0
+	sb.content_margin_bottom = 8.0 if pressed else 14.0
+	return sb
+
+
+## Knopf im Stil der Pack-Menueknoepfe (leere Vorlage, Text kommt vom Spiel)
 func style_button(b: Button) -> void:
-	b.add_theme_stylebox_override("normal", panel_style())
-	b.add_theme_stylebox_override("hover", panel_style(Color("#ffe9bd")))
-	b.add_theme_stylebox_override("pressed", panel_style(Color("#e0c088")))
-	b.add_theme_stylebox_override("disabled", panel_style(Color("#b9a98a"), Color("#6a5a48")))
+	b.add_theme_stylebox_override("normal", _button_box("res://art/pack/ui/button.png", 18.0))
+	b.add_theme_stylebox_override("hover", _button_box("res://art/pack/ui/button_hover.png", 18.0))
+	b.add_theme_stylebox_override("pressed", _button_box("res://art/pack/ui/button_pressed.png", 12.0, true))
+	var off := _button_box("res://art/pack/ui/button.png", 18.0)
+	off.modulate_color = Color(0.8, 0.76, 0.76)
+	b.add_theme_stylebox_override("disabled", off)
 	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	for c in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-		b.add_theme_color_override(c, Color("#3a2414"))
-	b.add_theme_color_override("font_disabled_color", Color("#6a5a48"))
+		b.add_theme_color_override(c, UI_INK)
+	b.add_theme_color_override("font_disabled_color", UI_INK_OFF)

@@ -22,16 +22,23 @@ func _ready() -> void:
 	row.offset_top = -150.0
 	row.offset_bottom = -18.0
 	add_child(row)
+	# Pack-Zombies (normale und Axt-Zombies), die langsam auf der Stelle schlurfen
 	for i in 9:
-		var t := TextureRect.new()
-		t.texture = preload("res://art/zombie_runner.png") if i % 3 == 1 else preload("res://art/zombie.png")
-		t.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		t.custom_minimum_size = Vector2(96, 132)
-		t.flip_h = i % 2 == 0
-		t.modulate = Color(1, 1, 1, 0.55)
-		row.add_child(t)
+		var group := "zombie_big" if i == 4 else ("zombie_axe" if i % 3 == 1 else "zombie_small")
+		var holder := Control.new()
+		holder.custom_minimum_size = Vector2(96, 132)
+		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var z := AnimatedSprite2D.new()
+		z.sprite_frames = SheetAnims.frames(group)
+		z.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		z.scale = Vector2(5, 5)
+		z.position = Vector2(48, 132 + SheetAnims.foot_offset(group) * 5.0)
+		z.modulate = Color(1, 1, 1, 0.6)
+		z.play(&"walk_down")
+		z.frame = i % 6
+		z.speed_scale = 0.6
+		holder.add_child(z)
+		row.add_child(holder)
 
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 12)
@@ -67,13 +74,13 @@ func _ready() -> void:
 	box.add_child(_button("Beenden", get_tree().quit))
 
 	help_panel = PanelContainer.new()
-	help_panel.add_theme_stylebox_override("panel", G.panel_style())
+	help_panel.add_theme_stylebox_override("panel", G.pack_panel())
 	help_panel.visible = false
 	var help := Label.new()
 	help.text = "WASD  bewegen  ·  Maus  zielen  ·  Linksklick  schiessen\nR  nachladen  ·  Rechtsklick / V  Messer  ·  Shift  sprinten\nE  benutzen / kaufen  ·  E halten  Barrikade reparieren\nQ / 1 / 2  Waffe wechseln  ·  Esc  Pause"
 	help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	help.add_theme_font_size_override("font_size", 15)
-	help.add_theme_color_override("font_color", Color("#3a2414"))
+	help.add_theme_color_override("font_color", G.UI_TEXT)
 	help_panel.add_child(help)
 	box.add_child(help_panel)
 

@@ -4,15 +4,27 @@ extends Node2D
 ## Wegfindung fuer Zombies und alle Objekte (Tueren, Fenster, Automaten ...).
 
 const LevelData := preload("res://scripts/level_data.gd")
-const TILES_TEX := preload("res://art/tiles.png")
+## Grafiken kommen aus dem Asset-Pack (tools/import_asset_pack.py -> art/pack/)
+const TILES_TEX := preload("res://art/pack/tiles.png")
+const WALLS_TEX := preload("res://art/pack/walls.png")
 
-const T_WALL_TOP := 5
-const T_WALL_FRONT := 6
+const SRC_FLOOR := 0
+const SRC_WALL := 1          # Spalte = Nachbarmaske (N=1, O=2, S=4, W=8)
+const WALL_TOP := 0          # Zeilen im Wand-Atlas
+const WALL_FRONT := 1
+const WALL_WINDOW := 2
 const T_HEDGE := 7
-const T_WINDOW := 8
+const T_WOODS_GROUND := 8    # Waldboden ohne Buesch (Spawns, Luecken in der Hecke)
 const FLOOR_TILES := {".": 0, ",": 1, ":": 2, "~": 3, ";": 4, "X": 9}
-const SOLID_PROPS := {"B": "res://art/crate.png", "O": "res://art/barrel.png",
-	"C": "res://art/container.png", "Y": "res://art/tree.png"}
+## Kartenzeichen -> Varianten (eine wird pro Zelle fest ausgewuerfelt)
+const SOLID_PROPS := {
+	"B": ["res://art/pack/props/crate_0.png", "res://art/pack/props/crate_1.png", "res://art/pack/props/crate_2.png"],
+	"O": ["res://art/pack/props/barrel_0.png", "res://art/pack/props/barrel_1.png", "res://art/pack/props/barrel_2.png"],
+	"C": ["res://art/pack/props/container_0.png", "res://art/pack/props/container_1.png"],
+	"Y": ["res://art/pack/props/tree_0.png", "res://art/pack/props/tree_1.png"],
+}
+const WOODS_TREES := ["res://art/pack/props/woods_tree_0.png", "res://art/pack/props/woods_tree_1.png",
+	"res://art/pack/props/woods_tree_2.png", "res://art/pack/props/woods_tree_3.png"]
 
 var game: Node
 var grid: Array[String] = []
@@ -67,22 +79,28 @@ func build(p_game: Node) -> void:
 			var cell := Vector2i(x, y)
 			var variant := posmod(x * 7 + y * 13 + (x * y) % 5, 4)
 			if ch == " ":
-				floor_map.set_cell(cell, 0, Vector2i(T_HEDGE, variant))
+				floor_map.set_cell(cell, SRC_FLOOR, Vector2i(T_HEDGE, variant))
 				astar.set_point_solid(cell, true)
+				_maybe_add_tree(x, y)
 			elif ch == "#" or LevelData.WALLBUYS.has(ch):
 				var front := _is_open(x, y + 1)
-				floor_map.set_cell(cell, 0, Vector2i(T_WALL_FRONT if front else T_WALL_TOP, variant))
+				floor_map.set_cell(cell, SRC_WALL, Vector2i(_wall_mask(x, y), WALL_FRONT if front else WALL_TOP))
 				astar.set_point_solid(cell, true)
 				if LevelData.WALLBUYS.has(ch):
 					_add_wallbuy(cell, LevelData.WALLBUYS[ch])
 			elif ch == "W":
-				floor_map.set_cell(cell, 0, Vector2i(T_WINDOW, 0))
+				var mask := _wall_mask(x, y)
+				if mask == 0:
+					# Fenster mitten in der Hecke: nur eine Luecke, die Bretter zeichnet die Barrikade
+					floor_map.set_cell(cell, SRC_FLOOR, Vector2i(T_WOODS_GROUND, variant))
+				else:
+					floor_map.set_cell(cell, SRC_WALL, Vector2i(mask, WALL_WINDOW))
 				_add_window(cell)
 			else:
 				var t: int = FLOOR_TILES.get(ch, -1)
 				if t == -1:
 					t = _neighbor_floor(x, y)
-				floor_map.set_cell(cell, 0, Vector2i(t, variant))
+				floor_map.set_cell(cell, SRC_FLOOR, Vector2i(t, variant))
 				if ch == "X":
 					extraction_cells[cell] = true
 				elif ch == "Z":
@@ -103,6 +121,8 @@ func build(p_game: Node) -> void:
 		entities.add_child(d)
 		doors[id] = d
 
+	_add_helipad()
+
 
 func _make_tileset() -> TileSet:
 	var ts := TileSet.new()
@@ -110,21 +130,89 @@ func _make_tileset() -> TileSet:
 	ts.add_physics_layer()
 	ts.set_physics_layer_collision_layer(0, G.L_WORLD)
 	ts.set_physics_layer_collision_mask(0, 0)
-	var src := TileSetAtlasSource.new()
-	src.texture = TILES_TEX
-	src.texture_region_size = Vector2i(G.TILE, G.TILE)
-	ts.add_source(src, 0)
 	var h := G.TILE * 0.5
 	var poly := PackedVector2Array([Vector2(-h, -h), Vector2(h, -h), Vector2(h, h), Vector2(-h, h)])
+
+	# Boden: 10 Typen x 4 Varianten, nur die Hecke ist fest
+	var floor_src := TileSetAtlasSource.new()
+	floor_src.texture = TILES_TEX
+	floor_src.texture_region_size = Vector2i(G.TILE, G.TILE)
+	ts.add_source(floor_src, SRC_FLOOR)
 	for tx in 10:
 		for v in 4:
 			var c := Vector2i(tx, v)
-			src.create_tile(c)
-			if tx == T_WALL_TOP or tx == T_WALL_FRONT or tx == T_HEDGE:
-				var td := src.get_tile_data(c, 0)
-				td.add_collision_polygon(0)
-				td.set_collision_polygon_points(0, 0, poly)
+			floor_src.create_tile(c)
+			if tx == T_HEDGE:
+				_solid_tile(floor_src, c, poly)
+
+	# Waende: 16 Nachbarmasken x (oben, Vorderseite, Fenster). Fenster haben keine
+	# Kollision - dort sperrt die Barrikade nur den Spieler.
+	var wall_src := TileSetAtlasSource.new()
+	wall_src.texture = WALLS_TEX
+	wall_src.texture_region_size = Vector2i(G.TILE, G.TILE)
+	ts.add_source(wall_src, SRC_WALL)
+	for m in 16:
+		for row in 3:
+			var c := Vector2i(m, row)
+			wall_src.create_tile(c)
+			if row != WALL_WINDOW:
+				_solid_tile(wall_src, c, poly)
 	return ts
+
+
+func _solid_tile(src: TileSetAtlasSource, c: Vector2i, poly: PackedVector2Array) -> void:
+	var td := src.get_tile_data(c, 0)
+	td.add_collision_polygon(0)
+	td.set_collision_polygon_points(0, 0, poly)
+
+
+func _is_wall(x: int, y: int) -> bool:
+	var ch := _char(x, y)
+	return ch == "#" or ch == "W" or LevelData.WALLBUYS.has(ch)
+
+
+## Welche Nachbarn sind ebenfalls Wand? Bestimmt, wo die Mauerkrone einen Rand bekommt.
+func _wall_mask(x: int, y: int) -> int:
+	var m := 0
+	if _is_wall(x, y - 1):
+		m |= 1
+	if _is_wall(x + 1, y):
+		m |= 2
+	if _is_wall(x, y + 1):
+		m |= 4
+	if _is_wall(x - 1, y):
+		m |= 8
+	return m
+
+
+## Baeume im Wald: nur tief im Dickicht, damit sie nichts Begehbares verdecken.
+func _maybe_add_tree(x: int, y: int) -> void:
+	if posmod(x * 13 + y * 7 + (x * y) % 3, 5) != 0:
+		return
+	for o in [Vector2i(-1, -2), Vector2i(0, -2), Vector2i(1, -2), Vector2i(-1, -1), Vector2i(0, -1),
+			Vector2i(1, -1), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(-1, 1), Vector2i(0, 1), Vector2i(1, 1)]:
+		var c: Vector2i = Vector2i(x, y) + o
+		if in_bounds(c) and grid[c.y][c.x] != " ":
+			return
+	# Knoten steht am Stamm (fuer die Sortierung nach y), das Bild ragt nach oben
+	var s := Sprite2D.new()
+	s.texture = load(WOODS_TREES[posmod(x * 5 + y * 3, WOODS_TREES.size())])
+	s.position = cell_center(Vector2i(x, y)) + Vector2(posmod(x * 3 + y, 5) - 2, 7.0)
+	s.offset = Vector2(0, -s.texture.get_height() * 0.5)
+	entities.add_child(s)
+
+
+## Markierung auf dem Landeplatz (X-Felder), mittig ueber alle Felder.
+func _add_helipad() -> void:
+	if extraction_cells.is_empty():
+		return
+	var r := Rect2i(extraction_cells.keys()[0], Vector2i.ONE)
+	for c: Vector2i in extraction_cells:
+		r = r.expand(c).expand(c + Vector2i.ONE)
+	var s := Sprite2D.new()
+	s.texture = preload("res://art/pack/props/helipad.png")
+	s.position = Vector2(r.position + r.end) * 0.5 * G.TILE
+	floor_map.add_child(s)
 
 
 func _char(x: int, y: int) -> String:
@@ -143,7 +231,7 @@ func _neighbor_floor(x: int, y: int) -> int:
 		var ch := _char(x + o.x, y + o.y)
 		if FLOOR_TILES.has(ch) and ch != "X":
 			return FLOOR_TILES[ch]
-	return 3
+	return T_WOODS_GROUND
 
 
 func _register(ch: String, node: Node) -> void:
@@ -176,7 +264,7 @@ func _add_window(cell: Vector2i) -> void:
 func _add_wallbuy(cell: Vector2i, weapon_id: String) -> void:
 	var it := Interactable.new()
 	it.position = cell_center(cell)
-	it.setup(game, "wallbuy", G.weapon_tex(weapon_id))
+	it.setup(game, "wallbuy", G.weapon_icon(weapon_id))
 	it.weapon_id = weapon_id
 	it.sprite.position = Vector2(0, -1)
 	var plate := Sprite2D.new()
@@ -196,7 +284,8 @@ func _add_object(ch: String, cell: Vector2i) -> void:
 		var n := Node2D.new()
 		n.position = pos
 		var s := Sprite2D.new()
-		s.texture = load(SOLID_PROPS[ch])
+		var variants: Array = SOLID_PROPS[ch]
+		s.texture = load(variants[posmod(cell.x * 31 + cell.y * 17, variants.size())])
 		s.position = Vector2(0, 8.0 - s.texture.get_height() * 0.5)
 		n.add_child(s)
 		if ch == "Y":
@@ -226,19 +315,21 @@ func _add_object(ch: String, cell: Vector2i) -> void:
 	it.position = pos
 	match ch:
 		"A":
-			it.setup(game, "shop", preload("res://art/shop.png"))
+			it.setup(game, "shop", preload("res://art/pack/props/shop.png"))
 		"M":
-			it.setup(game, "box", preload("res://art/box.png"))
+			it.setup(game, "box", preload("res://art/pack/props/box.png"))
 		"U":
-			it.setup(game, "upgrade", preload("res://art/upgrade.png"))
+			it.setup(game, "upgrade", preload("res://art/pack/props/upgrade.png"))
 		"E":
+			# Kein passender Schalter im Pack -> Platzhalter
 			it.setup(game, "power", preload("res://art/switch_base.png"))
 		"K":
-			it.setup(game, "radio", preload("res://art/radio.png"))
+			it.setup(game, "radio", preload("res://art/pack/props/radio.png"))
 		_:
 			if LevelData.PERK_CHARS.has(ch):
 				var perk: String = LevelData.PERK_CHARS[ch]
-				it.setup(game, "perk", preload("res://art/machine.png"), G.PERKS[perk]["color"])
+				# Perk-Automaten sind schon in der Perk-Farbe eingefaerbt
+				it.setup(game, "perk", load("res://art/pack/props/perk_%s.png" % perk))
 				it.perk_id = perk
 			else:
 				push_warning("Unbekanntes Kartenzeichen '%s' bei %s" % [ch, cell])

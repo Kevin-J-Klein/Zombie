@@ -35,6 +35,8 @@ var defend_t := 0.0
 var extraction_open := false
 var gnomes := 0
 
+var tank_seen := false
+
 var menu_open := false
 var shop_block_t := 0.0
 var over := false
@@ -128,13 +130,16 @@ func _spawn_zombie() -> void:
 	z.setup(self, round_num)
 	z.position = level.random_spawn() + Vector2(randf_range(-3, 3), randf_range(-3, 3))
 	level.entities.add_child(z)
+	if z.tank and not tank_seen:
+		tank_seen = true
+		announce("Achtung: Panzer-Zombie!", "Langsam, aber zäh – und er schlägt hart zu")
 
 
 func on_zombie_killed(z: Zombie, melee: bool, award: bool) -> void:
 	kills += 1
 	if not award:
 		return
-	add_points(130 if melee else 60)
+	add_points((130 if melee else 60) + (G.TANK_KILL_BONUS if z.tank else 0))
 	# Power-ups nur dort fallen lassen, wo der Spieler auch hinkommt
 	if powerups_this_round < 4 and randf() < 0.045 and level.reached.has(level.to_cell(z.global_position)):
 		powerups_this_round += 1
@@ -343,6 +348,8 @@ func _finish(victory: bool) -> void:
 	player.dead = not victory
 	player.input_enabled = false
 	G.last_result = {"won": victory, "round": round_num, "kills": kills, "points": total_points, "time": time_played}
+	if not victory:
+		player.play_death()
 	hud.show_end(victory)
 
 
@@ -409,10 +416,13 @@ func fx_blood(pos: Vector2, dir: Vector2) -> void:
 	p.initial_velocity_max = 90.0
 	p.scale_amount_min = 1.0
 	p.scale_amount_max = 2.0
-	p.color = Color("#b0141a")
+	p.color = Color("#7a2a3a")
 	level.fx.add_child(p)
 	p.emitting = true
 	get_tree().create_timer(0.6, false).timeout.connect(p.queue_free)
+	# Treffer-Spritzer aus dem Pack
+	var shot := SheetAnims.one_shot(level.fx, "fx", "shot_%d" % (randi() % 2 + 1), pos)
+	shot.flip_h = dir.x < 0.0
 
 	var s := Sprite2D.new()
 	s.texture = BLOOD.pick_random()

@@ -28,13 +28,15 @@ func setup(p_game: Node, p_cell: Vector2i) -> void:
 
 
 func _draw() -> void:
+	# Farben der Holzbretter aus dem Asset-Pack (Wooden-wall)
 	for i in planks:
 		var y := -7.0 + i * 3.0
-		var col := Color("#9a6a38") if i % 2 == 0 else Color("#b07e46")
+		var col := Color8(110, 74, 70) if i % 2 == 0 else Color8(131, 105, 97)
 		draw_rect(Rect2(-8, y, 16, 2), col)
-		draw_rect(Rect2(-8, y + 2, 16, 1), Color("#4a2f18"))
-		draw_rect(Rect2(-6, y, 1, 1), Color("#d8d8d8"))
-		draw_rect(Rect2(5, y, 1, 1), Color("#d8d8d8"))
+		draw_rect(Rect2(-8, y, 16, 1), col.lightened(0.12))
+		draw_rect(Rect2(-8, y + 2, 16, 1), Color8(51, 16, 28))
+		draw_rect(Rect2(-6, y, 1, 1), Color8(207, 189, 174))
+		draw_rect(Rect2(5, y, 1, 1), Color8(207, 189, 174))
 
 
 func remove_plank() -> void:

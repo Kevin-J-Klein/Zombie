@@ -1,7 +1,8 @@
 class_name Zombie
 extends CharacterBody2D
 ## Zombie: steigt aus dem Boden, laeuft per Wegfindung zum Spieler, reisst
-## Barrikaden ab und greift im Nahkampf an.
+## Barrikaden ab und greift im Nahkampf an. Drei Arten: normal, Renner (Axt-Zombie)
+## und ab Runde G.TANK_FROM_ROUND der langsame, zaehe Panzer-Zombie.
 
 enum St { RISE, CHASE, TEAR, WINDUP, DEAD }
 
@@ -17,6 +18,7 @@ var hp := 150.0
 var speed := 30.0
 var damage := 45.0
 var runner := false
+var tank := false
 
 var state := St.RISE
 var state_t := RISE_TIME
@@ -27,16 +29,24 @@ var attack_cd := 0.0
 var lost_t := 0.0
 var tear_window: Barricade
 var anim_t := 0.0
+var facing := "down"                 # side = rechts, left, up, down (wie die Pack-Animationen)
+var foot_y := -9.0                   # Sprite-Versatz, damit die Fuesse auf dem Ursprung stehen
 
-@onready var body: Sprite2D = $Body
+@onready var body: AnimatedSprite2D = $Body
 @onready var hurtbox: Area2D = $Hurtbox
 
 
-func setup(p_game: Node, round_num: int) -> void:
+func setup(p_game: Node, round_num: int, force_tank := false) -> void:
 	game = p_game
 	level = game.level
 	player = game.player
 	hp = G.zombie_health(round_num)
+	tank = force_tank or randf() < G.tank_chance(round_num)
+	if tank:
+		hp *= G.TANK_HP_MULT
+		speed = G.TANK_SPEED + randf_range(-2.0, 2.0)
+		damage = G.TANK_DAMAGE
+		return
 	runner = round_num >= 3 and randf() < minf(0.15 * (round_num - 2), 0.8)
 	if runner:
 		speed = randf_range(56.0, 66.0)
@@ -46,9 +56,41 @@ func setup(p_game: Node, round_num: int) -> void:
 
 func _ready() -> void:
 	anim_t = randf() * 10.0
-	if runner:
-		body.texture = preload("res://art/zombie_runner.png")
+	# Normale Zombies: Zombie_Small, Renner: der hagere Axt-Zombie, Panzer: Zombie_Big
+	var group := "zombie_big" if tank else ("zombie_axe" if runner else "zombie_small")
+	if tank:
+		# Breiterer Koerper und groessere Trefferzone (eigene Shapes: die der Szene teilen sich alle Zombies)
+		var feet := CircleShape2D.new()
+		feet.radius = 5.0
+		$Shape.shape = feet
+		var hurt := RectangleShape2D.new()
+		hurt.size = Vector2(15, 21)
+		$Hurtbox/HurtShape.shape = hurt
+		$Hurtbox/HurtShape.position = Vector2(0, -9)
+	body.sprite_frames = SheetAnims.frames(group)
+	foot_y = SheetAnims.foot_offset(group)
+	body.position.y = foot_y * 0.05
+	body.play(&"idle_down")
+	body.frame = randi() % body.sprite_frames.get_frame_count(&"idle_down")
 	body.scale.y = 0.05
+
+
+## Blickrichtung aus einem Richtungsvektor bestimmen.
+func _face(v: Vector2) -> void:
+	if v.length_squared() < 0.01:
+		return
+	if absf(v.x) >= absf(v.y):
+		facing = "side" if v.x > 0.0 else "left"
+	else:
+		facing = "down" if v.y > 0.0 else "up"
+
+
+func _play(anim: String, restart := false) -> void:
+	var a := StringName(anim + "_" + facing)
+	if restart or body.animation != a:
+		body.play(a)
+		if restart:
+			body.frame = 0
 
 
 func _physics_process(delta: float) -> void:
@@ -61,25 +103,28 @@ func _physics_process(delta: float) -> void:
 			state_t -= delta
 			var k := clampf(1.0 - state_t / RISE_TIME, 0.05, 1.0)
 			body.scale.y = k
-			body.position.y = -10.0 * k
+			body.position.y = foot_y * k
 			if state_t <= 0.0:
 				body.scale.y = 1.0
+				body.position.y = foot_y
 				state = St.CHASE
 		St.CHASE:
 			_chase(delta)
 		St.TEAR:
-			body.position.x = sin(anim_t * 20.0) * 0.8
 			if not is_instance_valid(tear_window) or tear_window.planks <= 0:
-				body.position.x = 0.0
 				state = St.CHASE
 			else:
+				# An den Brettern zerren: Angriffs-Animation immer wieder abspielen
+				_face(tear_window.global_position - global_position)
+				body.speed_scale = 1.0
+				if not body.is_playing() or not String(body.animation).begins_with("attack"):
+					_play("attack", true)
 				state_t -= delta
 				if state_t <= 0.0:
 					tear_window.remove_plank()
-					state_t = TEAR_TIME
+					state_t = _tear_time()
 		St.WINDUP:
 			state_t -= delta
-			body.position.y = -10.0 - sin((1.0 - state_t / 0.3) * PI) * 3.0
 			if state_t <= 0.0:
 				if global_position.distance_to(player.global_position) < ATTACK_RANGE + 7.0:
 					player.take_damage(damage)
@@ -92,9 +137,14 @@ func _chase(delta: float) -> void:
 	var dist := to_player.length()
 	if dist < ATTACK_RANGE and not player.dead:
 		velocity = Vector2.ZERO
+		_face(to_player)
 		if attack_cd <= 0.0:
 			state = St.WINDUP
-			state_t = 0.3
+			state_t = G.TANK_WINDUP if tank else 0.3
+			body.speed_scale = 1.0
+			_play("attack", true)
+		elif not String(body.animation).begins_with("attack") or not body.is_playing():
+			_play("idle")
 		return
 
 	repath_t -= delta
@@ -126,7 +176,7 @@ func _chase(delta: float) -> void:
 	if win != null and win.planks > 0:
 		tear_window = win
 		state = St.TEAR
-		state_t = TEAR_TIME
+		state_t = _tear_time()
 		velocity = Vector2.ZERO
 		return
 
@@ -142,10 +192,14 @@ func _chase(delta: float) -> void:
 
 	velocity = dir * speed + push
 	move_and_slide()
-	if absf(dir.x) > 0.1:
-		body.flip_h = dir.x < 0.0
-	body.position.y = -10.0 - absf(sin(anim_t * (14.0 if runner else 8.0))) * 1.2
-	body.rotation = sin(anim_t * (7.0 if runner else 4.0)) * 0.08
+	_face(dir)
+	_play("walk")
+	# Schrittfrequenz passend zum Tempo
+	body.speed_scale = speed / (48.0 if runner else (22.0 if tank else 30.0))
+
+
+func _tear_time() -> float:
+	return G.TANK_TEAR_TIME if tank else TEAR_TIME
 
 
 func hit(amount: float, dir: Vector2, melee: bool) -> void:
@@ -172,11 +226,14 @@ func die(melee: bool, award: bool) -> void:
 	hurtbox.collision_layer = 0
 	velocity = Vector2.ZERO
 	game.on_zombie_killed(self, melee, award)
-	body.modulate = Color(0.75, 0.75, 0.75)
-	body.position = Vector2(0, -3)
-	body.scale.y = 1.0
+	body.scale = Vector2.ONE
+	body.position = Vector2(0, foot_y)
+	body.speed_scale = 1.0
+	# Sterbe-Animationen gibt es nur seitlich: zum Spieler hin umfallen
+	var left := player.global_position.x < global_position.x if is_instance_valid(player) else facing == "left"
+	body.play(&"death_left" if left else &"death_side")
 	var tw := create_tween()
-	tw.tween_property(body, "rotation", (PI * 0.5) * (-1.0 if body.flip_h else 1.0), 0.18)
+	tw.tween_property(body, "modulate", Color(0.8, 0.8, 0.8), 0.4)
 	tw.tween_interval(3.0)
 	tw.tween_property(body, "modulate:a", 0.0, 1.5)
 	tw.tween_callback(queue_free)

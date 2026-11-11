@@ -8,7 +8,8 @@ const SPRINT_SPEED := 108.0
 const REGEN_DELAY := 4.0
 const REGEN_RATE := 45.0
 const MELEE_DAMAGE := 150.0
-const AIM_HEIGHT := Vector2(0, -8)   # Brusthoehe: von hier aus wird gezielt und gezeichnet
+const AIM_HEIGHT := Vector2(0, -6)   # Brusthoehe: von hier aus wird gezielt und gezeichnet
+const GUN_REACH := 2.0               # Hand ein Stueck vor dem Koerper, damit der Schaft nicht hinten heraussteht
 
 var game: Node
 
@@ -32,17 +33,21 @@ var invuln := 0.0
 var dead := false
 var input_enabled := true
 var aim_dir := Vector2.RIGHT
-var walk_time := 0.0
+var gun_length := 10.0               # Abstand Hand -> Muendung (fuer Mündungsfeuer und Leuchtspur)
 var prompt_text := ""
 var nearest: Node = null
 
-@onready var body: Sprite2D = $Body
-@onready var gun: Sprite2D = $Gun
+@onready var body: AnimatedSprite2D = $Body
+@onready var gun: Node2D = $Gun                 # Drehpunkt in der Hand, zeigt immer zur Maus
+@onready var gun_sprite: Sprite2D = $Gun/Sprite
 @onready var muzzle: Sprite2D = $Gun/Muzzle
 @onready var camera: Camera2D = $Camera
 
 
 func _ready() -> void:
+	body.sprite_frames = SheetAnims.frames("player")
+	body.position.y = SheetAnims.foot_offset("player")
+	body.play(&"idle_down")
 	give_weapon("pistol")
 
 
@@ -86,22 +91,37 @@ func _physics_process(delta: float) -> void:
 	if mouse.distance_to(aim_from) > 2.0:
 		aim_dir = (mouse - aim_from).normalized()
 	gun.rotation = aim_dir.angle()
-	gun.flip_v = aim_dir.x < 0.0
-	body.flip_h = aim_dir.x < 0.0
+	gun.position = AIM_HEIGHT + aim_dir * GUN_REACH
+	# Nach links gespiegelt (um den Drehpunkt, damit die Hand am Griff bleibt)
+	gun.scale.y = -1.0 if aim_dir.x < 0.0 else 1.0
 	# Waffe hinter dem Koerper zeichnen, wenn nach oben gezielt wird
 	var want_index := 0 if aim_dir.y < -0.35 else 1
 	if gun.get_index() != want_index:
 		move_child(gun, want_index)
-	if dir != Vector2.ZERO:
-		walk_time += delta * (16.0 if sprinting else 11.0)
-		body.position.y = -10.0 - absf(sin(walk_time)) * 1.5
-	else:
-		body.position.y = -10.0
+	var anim := StringName(("run_" if dir != Vector2.ZERO else "idle_") + facing())
+	if body.animation != anim:
+		body.play(anim)
+	body.speed_scale = 1.4 if sprinting else 1.0
 	camera.offset = ((mouse - global_position) * 0.12).limit_length(26.0)
 
 	_update_interaction(delta)
 	if input_enabled:
 		_handle_weapons(delta)
+
+
+## Blickrichtung der Figur (passend zu den Pack-Animationen): side = rechts, left, up, down.
+func facing() -> String:
+	if absf(aim_dir.x) >= absf(aim_dir.y) * 0.8:
+		return "side" if aim_dir.x >= 0.0 else "left"
+	return "down" if aim_dir.y > 0.0 else "up"
+
+
+## Sterbe-Animation; laeuft auch weiter, wenn das Spiel fuer den End-Bildschirm pausiert.
+func play_death() -> void:
+	gun.visible = false
+	body.speed_scale = 1.0
+	body.process_mode = Node.PROCESS_MODE_ALWAYS
+	body.play(&"death_left" if aim_dir.x < 0.0 else &"death_side")
 
 
 # ------------------------------------------------------------------ Benutzen
@@ -206,9 +226,16 @@ func _select(i: int) -> void:
 
 func _update_gun_sprite() -> void:
 	var w := weapon()
-	gun.texture = G.weapon_tex(w["id"])
-	gun.modulate = Color.WHITE if w["level"] == 0 else Color(1.15, 0.85, 1.35)
-	muzzle.position.x = gun.texture.get_width() + 6.0
+	var info := SheetAnims.weapon(w["id"])
+	var grip := Vector2(info["grip"][0], info["grip"][1])
+	gun_sprite.texture = G.weapon_tex(w["id"])
+	gun_sprite.offset = -grip
+	# Schraeg gezeichnete Waffen (Pistole) so drehen, dass der Lauf zur Maus zeigt
+	gun_sprite.rotation = deg_to_rad(info["angle"])
+	gun_sprite.modulate = Color.WHITE if w["level"] == 0 else Color(1.15, 0.85, 1.35)
+	var tip := (Vector2(info["muzzle"][0], info["muzzle"][1]) - grip).rotated(gun_sprite.rotation)
+	gun_length = tip.length()
+	muzzle.position = Vector2(gun_length, 0)
 
 
 func _handle_weapons(delta: float) -> void:
@@ -258,7 +285,7 @@ func fire() -> void:
 	muzzle.visible = true
 	var space := get_world_2d().direct_space_state
 	var dmg := damage_of(w)
-	var draw_from: Vector2 = global_position + AIM_HEIGHT + aim_dir * (gun.texture.get_width() + 3.0)
+	var draw_from: Vector2 = gun.global_position + aim_dir * (gun_length + 1.0)
 	for i in int(d["pellets"]):
 		var dir := aim_dir.rotated(deg_to_rad(randf_range(-d["spread"], d["spread"])))
 		var from := global_position
