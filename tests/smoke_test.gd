@@ -101,6 +101,23 @@ func run() -> void:
 	check(game.round_num >= 3, "Runden zaehlen hoch (Runde %d)" % game.round_num)
 	check(game.kills >= 14, "Kills werden gezaehlt (%d)" % game.kills)
 
+	# --- Panzer-Zombie
+	check(G.tank_chance(G.TANK_FROM_ROUND - 1) == 0.0 and G.tank_chance(30) == G.TANK_MAX_CHANCE,
+		"Panzer-Zombies erst ab Runde %d, Anteil begrenzt" % G.TANK_FROM_ROUND)
+	var tank: Zombie = game.ZOMBIE_SCENE.instantiate()
+	tank.setup(game, 5, true)
+	tank.position = level.cell_center(Vector2i(13, 12))
+	level.entities.add_child(tank)
+	check(tank.tank and not tank.runner and tank.hp == G.zombie_health(5) * G.TANK_HP_MULT and tank.speed < 25.0,
+		"Panzer-Zombie: viel Leben, langsam")
+	await wait(1.2)
+	check(tank.body.sprite_frames.has_animation(&"attack_side") and String(tank.body.animation).begins_with("walk"),
+		"Panzer-Zombie laeuft mit eigener Animation (%s)" % tank.body.animation)
+	var pts_before: int = game.points
+	tank.hit(1e9, Vector2.RIGHT, false)
+	var tank_pts := (60 + G.TANK_KILL_BONUS) * (2 if game.double_points_t > 0.0 else 1)
+	check(game.points - pts_before == tank_pts, "Panzer-Zombie gibt Bonuspunkte (%d)" % (game.points - pts_before))
+
 	# --- Tueren
 	game.points = 500000
 	var expected := {"a": 7, "b": 8, "c": 9, "d": 11, "e": 13}
