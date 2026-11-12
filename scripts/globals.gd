@@ -61,8 +61,8 @@ const DEFEND_SECONDS := 90.0
 
 ## Farben der Oberflaeche (aus der Palette des Asset-Packs)
 const UI_TEXT := Color("#efe3c8")        # heller Text auf den dunklen Panels
-const UI_INK := Color("#2c1d35")         # dunkler Text auf den hellen Knoepfen
-const UI_INK_OFF := Color("#4f4452")
+const UI_INK := UiStil.UI_INK            # dunkler Text auf den hellen Knoepfen
+const UI_INK_OFF := UiStil.UI_INK_OFF
 
 ## Statistik der letzten Partie (fuer den End-Bildschirm)
 var last_result := {}
@@ -176,16 +176,12 @@ func panel_style(bg := Color("#f3d9a4"), border := Color("#7a4a21"), width := 3)
 ## 9-Teile-Box aus einer Oberflaechen-Grafik (Pack.tex("ui/...")). Diese Grafiken sind
 ## schon 3x vergroessert, die Raender (margin) sind daher in diesen grossen Pixeln angegeben.
 func tex_style(ui_name: String, margin: float, content := -1.0) -> StyleBoxTexture:
-	var sb := StyleBoxTexture.new()
-	sb.texture = Pack.tex("ui/" + ui_name)
-	sb.set_texture_margin_all(margin)
-	sb.set_content_margin_all(margin if content < 0.0 else content)
-	return sb
+	return UiStil.tex_style(ui_name, margin, content)
 
 
 ## Grosses Panel (Shop, Pause, Ende, Punkte) im Stil des Pack-Inventars
 func pack_panel() -> StyleBoxTexture:
-	return tex_style("panel", 18.0, 20.0)
+	return UiStil.pack_panel()
 
 
 ## Hotbar-Feld; gewaehlt = heller Rahmen
@@ -194,13 +190,7 @@ func pack_cell(selected: bool) -> StyleBoxTexture:
 
 
 func _button_box(ui_name: String, bottom: float, pressed := false) -> StyleBoxTexture:
-	var sb := tex_style(ui_name, 15.0)
-	sb.texture_margin_bottom = bottom
-	sb.content_margin_left = 18.0
-	sb.content_margin_right = 18.0
-	sb.content_margin_top = 10.0 if pressed else 6.0
-	sb.content_margin_bottom = 8.0 if pressed else 14.0
-	return sb
+	return UiStil.button_box(ui_name, bottom, pressed)
 
 
 ## Knopf im Stil der Pack-Menueknoepfe (leere Vorlage, Text kommt vom Spiel)

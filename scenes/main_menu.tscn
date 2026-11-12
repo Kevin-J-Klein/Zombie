@@ -1,6 +1,8 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/main_menu.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/figur_vorschau.gd" id="2_figur"]
+[ext_resource type="PackedScene" path="res://scenes/slot_card.tscn" id="3_card"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -10,3 +12,239 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
+
+[node name="Hintergrund" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.109804, 0.164706, 0.109804, 1)
+
+[node name="Zombiereihe" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -150.0
+offset_bottom = -18.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_override_constants/separation = 26
+alignment = 1
+
+[node name="Zombie1" type="Control" parent="Zombiereihe"]
+custom_minimum_size = Vector2(96, 132)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie1"]
+modulate = Color(1, 1, 1, 0.6)
+texture_filter = 1
+position = Vector2(48, 132)
+scale = Vector2(5, 5)
+speed_scale = 0.6
+script = ExtResource("2_figur")
+gruppe = "zombie_small"
+im_spiel_abspielen = true
+anim = "walk_down"
+start_bild = 0
+
+[node name="Zombie2" type="Control" parent="Zombiereihe"]
+custom_minimum_size = Vector2(96, 132)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie2"]
+modulate = Color(1, 1, 1, 0.6)
+texture_filter = 1
+position = Vector2(48, 132)
+scale = Vector2(5, 5)
+speed_scale = 0.6
+script = ExtResource("2_figur")
+gruppe = "zombie_axe"
+im_spiel_abspielen = true
+anim = "walk_down"
+start_bild = 1
+
+[node name="Zombie3" type="Control" parent="Zombiereihe"]
+custom_minimum_size = Vector2(96, 132)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie3"]
+modulate = Color(1, 1, 1, 0.6)
+texture_filter = 1
+position = Vector2(48, 132)
+scale = Vector2(5, 5)
+speed_scale = 0.6
+script = ExtResource("2_figur")
+gruppe = "zombie_small"
+im_spiel_abspielen = true
+anim = "walk_down"
+start_bild = 2
+
+[node name="Zombie4" type="Control" parent="Zombiereihe"]
+custom_minimum_size = Vector2(96, 132)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie4"]
+modulate = Color(1, 1, 1, 0.6)
+texture_filter = 1
+position = Vector2(48, 132)
+scale = Vector2(5, 5)
+speed_scale = 0.6
+script = ExtResource("2_figur")
+gruppe = "zombie_small"
+im_spiel_abspielen = true
+anim = "walk_down"
+start_bild = 3
+
+[node name="Zombie5" type="Control" parent="Zombiereihe"]
+custom_minimum_size = Vector2(96, 132)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie5"]
+modulate = Color(1, 1, 1, 0.6)
+texture_filter = 1
+position = Vector2(48, 132)
+scale = Vector2(5, 5)
+speed_scale = 0.6
+script = ExtResource("2_figur")
+gruppe = "zombie_big"
+im_spiel_abspielen = true
+anim = "walk_down"
+start_bild = 4
+
+[node name="Zombie6" type="Control" parent="Zombiereihe"]
+custom_minimum_size = Vector2(96, 132)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie6"]
+modulate = Color(1, 1, 1, 0.6)
+texture_filter = 1
+position = Vector2(48, 132)
+scale = Vector2(5, 5)
+speed_scale = 0.6
+script = ExtResource("2_figur")
+gruppe = "zombie_small"
+im_spiel_abspielen = true
+anim = "walk_down"
+start_bild = 5
+
+[node name="Zombie7" type="Control" parent="Zombiereihe"]
+custom_minimum_size = Vector2(96, 132)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie7"]
+modulate = Color(1, 1, 1, 0.6)
+texture_filter = 1
+position = Vector2(48, 132)
+scale = Vector2(5, 5)
+speed_scale = 0.6
+script = ExtResource("2_figur")
+gruppe = "zombie_small"
+im_spiel_abspielen = true
+anim = "walk_down"
+start_bild = 0
+
+[node name="Zombie8" type="Control" parent="Zombiereihe"]
+custom_minimum_size = Vector2(96, 132)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie8"]
+modulate = Color(1, 1, 1, 0.6)
+texture_filter = 1
+position = Vector2(48, 132)
+scale = Vector2(5, 5)
+speed_scale = 0.6
+script = ExtResource("2_figur")
+gruppe = "zombie_axe"
+im_spiel_abspielen = true
+anim = "walk_down"
+start_bild = 1
+
+[node name="Zombie9" type="Control" parent="Zombiereihe"]
+custom_minimum_size = Vector2(96, 132)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie9"]
+modulate = Color(1, 1, 1, 0.6)
+texture_filter = 1
+position = Vector2(48, 132)
+scale = Vector2(5, 5)
+speed_scale = 0.6
+script = ExtResource("2_figur")
+gruppe = "zombie_small"
+im_spiel_abspielen = true
+anim = "walk_down"
+start_bild = 2
+
+[node name="Inhalt" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -580.0
+offset_top = 34.0
+offset_right = 580.0
+grow_horizontal = 2
+theme_override_constants/separation = 6
+
+[node name="Titel" type="Label" parent="Inhalt"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.784314, 0.156863, 0.117647, 1)
+theme_override_colors/font_outline_color = Color(0.101961, 0.0392157, 0.0313726, 1)
+theme_override_constants/outline_size = 14
+theme_override_font_sizes/font_size = 64
+text = "ZOMBIE GAME"
+horizontal_alignment = 1
+
+[node name="Untertitel" type="Label" parent="Inhalt"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.909804, 0.862745, 0.752941, 1)
+theme_override_font_sizes/font_size = 18
+text = "Wähle einen Spielstand. Das Spiel speichert automatisch."
+horizontal_alignment = 1
+
+[node name="Abstand" type="Control" parent="Inhalt"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+
+[node name="Plaetze" type="HBoxContainer" parent="Inhalt"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="Platz1" parent="Inhalt/Plaetze" instance=ExtResource("3_card")]
+layout_mode = 2
+
+[node name="Platz2" parent="Inhalt/Plaetze" instance=ExtResource("3_card")]
+layout_mode = 2
+
+[node name="Platz3" parent="Inhalt/Plaetze" instance=ExtResource("3_card")]
+layout_mode = 2
+
+[node name="Beenden" type="Button" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -176.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = 60.0
+grow_horizontal = 0
+theme_override_font_sizes/font_size = 18
+text = "Beenden"
