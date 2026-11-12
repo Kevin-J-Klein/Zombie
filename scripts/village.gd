@@ -9,6 +9,8 @@ extends Node2D
 ##   Schilder     VillageTag: Namensschilder ueber den Orten
 ##   Start, StartNachPartie   wo die Figur auftaucht (beim Spielstart / nach einer Partie)
 ##   Zombies      ZombieZone: Bereiche, in denen Zombies als Kulisse schlurfen
+##   Bewohner     VillageNpc: hier laufen die Charaktere herum, die man gerade nicht spielt;
+##                mit E ansprechen = Charakter wechseln
 ##   Grenzen      unsichtbare Waende (Kollisionsformen)
 ## Die Fenster baut village_ui.gd.
 
@@ -23,6 +25,7 @@ var player: VillagePlayer
 var ui: VillageUi
 var zombies: Array[Dictionary] = []
 var nearest := {}
+var npcs: Array[VillageNpc] = []
 var block_t := 0.0
 
 @onready var floor_map: TileMapLayer = $Boden
@@ -43,6 +46,14 @@ func _ready() -> void:
 	start = $Start.global_position
 	start_after_run = $StartNachPartie.global_position
 	_add_zombies()
+	# Bewohner zu den anderen Figuren stellen (nach y sortiert); Bereich merkt sich jeder selbst
+	for n in $Bewohner.get_children():
+		if n is VillageNpc:
+			npcs.append(n)
+	for n in npcs:
+		n.reparent(entities)
+	_assign_npcs()
+	Save.changed.connect(_assign_npcs)
 
 	player = VillagePlayer.new()
 	player.name = "Spieler"
@@ -73,10 +84,43 @@ func _process(delta: float) -> void:
 		if d < it["reach"] and d < best:
 			best = d
 			nearest = it
+	for npc in npcs:
+		if npc.charakter == "":
+			continue
+		var d := player.global_position.distance_to(npc.global_position)
+		if d < npc.reach * 2.0:
+			npc.look_at_player(player.global_position)
+		if d < npc.reach and d < best:
+			best = d
+			nearest = {"kind": "npc", "npc": npc, "prompt": npc.prompt()}
 	ui.set_prompt("" if nearest.is_empty() or not player.input_enabled else nearest["prompt"])
 	if not nearest.is_empty() and player.input_enabled and block_t <= 0.0 \
 			and Input.is_action_just_pressed("interact"):
-		ui.open(nearest["kind"])
+		if nearest["kind"] == "npc":
+			talk_to(nearest["npc"])
+		else:
+			ui.open(nearest["kind"])
+
+
+## Bewohner ansprechen: man spielt ab jetzt diesen Charakter, er begruesst einen.
+## Der bisherige Charakter laeuft danach an seiner Stelle herum (_assign_npcs).
+func talk_to(npc: VillageNpc) -> void:
+	var id := npc.charakter
+	if id == "" or id == Save.character():
+		return
+	Save.set_character(id)
+	ui.say(HubData.CHARACTERS[id].get("gruss", ""), player)
+	block_t = 0.4
+
+
+## Alle Charaktere ausser dem gewaehlten auf die Bewohner-Plaetze verteilen.
+func _assign_npcs() -> void:
+	var others: Array[String] = []
+	for id: String in HubData.CHARACTERS:
+		if id != Save.character():
+			others.append(id)
+	for i in npcs.size():
+		npcs[i].set_charakter(others[i] if i < others.size() else "")
 
 
 ## Nach dem Schliessen eines Fensters kurz warten, damit dasselbe E es nicht gleich wieder oeffnet.

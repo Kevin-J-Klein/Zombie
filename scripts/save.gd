@@ -149,7 +149,7 @@ func _defaults() -> Dictionary:
 		"scrap": 0, "scrap_total": 0, "games": 0,
 		"best_round": 0, "most_kills": 0, "fastest_escape": 0.0,
 		"eggs": {"gnomes": false, "escape": false},
-		"weapons": ["pistol"], "start_weapon": "pistol",
+		"weapons": ["pistol"], "start_weapon": "pistol", "character": "player",
 		"dest": {},
 		"contracts": [], "board_news": true,
 	}
@@ -173,6 +173,8 @@ func load_file() -> void:
 	data["contracts"] = kept
 	if not HubData.START_WEAPONS.has(data["start_weapon"]) or not data["weapons"].has(data["start_weapon"]):
 		data["start_weapon"] = "pistol"
+	if not HubData.CHARACTERS.has(data["character"]):
+		data["character"] = "player"
 	_fill_offers()
 
 
@@ -231,6 +233,18 @@ func buy_weapon(weapon_id: String) -> bool:
 	write()
 	changed.emit()
 	return true
+
+
+## Gewaehlter Charakter (Schluessel in HubData.CHARACTERS)
+func character() -> String:
+	return data["character"]
+
+
+func set_character(id: String) -> void:
+	if HubData.CHARACTERS.has(id) and data["character"] != id:
+		data["character"] = id
+		write()
+		changed.emit()
 
 
 func start_weapon() -> String:

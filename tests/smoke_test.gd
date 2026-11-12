@@ -42,6 +42,7 @@ func _ready() -> void:
 	Save.use_test_file()
 	Engine.time_scale = 8.0
 	await run()
+	await run_lamar()
 	await run_village()
 	await run_slots()
 	print("SMOKE RESULT: %d Fehler" % fails)
@@ -250,6 +251,50 @@ func run() -> void:
 	get_tree().paused = false
 
 
+# ------------------------------------------------------------------ Charakter Lamar
+
+func run_lamar() -> void:
+	Save.set_character("lamar")
+	await new_game()
+	var p: Player = game.player
+	check(p.figur == "lamar" and p.get_script().resource_path.ends_with("lamar.gd"), "Lamar als Spielfigur geladen")
+	var anims_ok := true
+	for a in [&"idle_down", &"idle_up", &"idle_side", &"idle_left", &"run_down", &"run_up", &"run_side",
+			&"run_left", &"death_side", &"death_left"]:
+		anims_ok = anims_ok and p.body.sprite_frames.has_animation(a)
+	check(anims_ok, "Lamar hat alle Animationen des Players")
+	p.give_weapon("uzi")
+	check(p.weapon()["id"] == "uzi" and p.gun_sprite.texture != null, "Uzi in der Hand")
+	check(is_equal_approx(p.damage_of(p.weapon()), G.WEAPONS["uzi"]["damage"] * G.FAV_WEAPON_BONUS),
+		"Lieblingswaffe Uzi macht 10 % mehr Schaden")
+	check(not p.ability_ready() and p.ability_text() != "", "Bulldoggen vor Runde 1 noch nicht bereit")
+	p.invuln = 1e9
+	for i in 40:
+		if game.round_num >= 1:
+			break
+		await wait(0.25)
+	check(p.ability_ready(), "Bulldoggen in Runde 1 bereit")
+	check(p.try_ability(), "Bulldoggen gerufen (Taste X)")
+	await wait(0.2)
+	check(get_tree().get_nodes_in_group("bulldogs").size() == 2, "Tank und Biscuit sind da")
+	check(not p.ability_ready() and p.faehigkeit_ab_runde == game.round_num + 5, "Erst in 5 Runden wieder bereit")
+	check(not p.try_ability(), "Zweites Rufen geht nicht")
+	var bitten := false
+	var kills_before: int = game.kills
+	for i in 80:
+		for z in get_tree().get_nodes_in_group("zombies"):
+			if z.held_t > 0.0:
+				bitten = true
+		if bitten or game.kills > kills_before:
+			break
+		await wait(0.25)
+	check(bitten or game.kills > kills_before, "Bulldoggen beissen Zombies und halten sie fest")
+	await wait(22.0)
+	check(get_tree().get_nodes_in_group("bulldogs").is_empty(), "Bulldoggen laufen nach 20 s davon")
+	Save.set_character("player")
+	check(Save.character() == "player", "Charakter zurueck auf den Ueberlebenden")
+
+
 # ------------------------------------------------------------------ Dorf, Spielstand, Auftraege
 
 func run_village() -> void:
@@ -372,6 +417,26 @@ func run_village() -> void:
 	village.ui._navi_pick("vorstadt")
 	check(Save.dest_playable("vorstadt"), "Navi: Vorstadt ist befahrbar")
 	village.ui.close()
+
+	# --- Bewohner: Lamar laeuft herum, ansprechen = Charakter wechseln
+	check(Save.character() == "player" and village.npcs.size() == 1 and village.npcs[0].charakter == "lamar",
+		"Lamar laeuft als Bewohner im Dorf herum")
+	var npc: VillageNpc = village.npcs[0]
+	var npc_home: Rect2 = npc.area
+	await wait(2.0)
+	check(npc_home.grow(1.0).has_point(npc.global_position), "Lamar bleibt in seinem Bereich")
+	village.player.global_position = npc.global_position + Vector2(8, 0)
+	await wait(0.1)
+	check(village.nearest.get("npc") == npc and village.ui.prompt_label.text.contains("Lamar"), "Hinweis: Mit Lamar reden")
+	village.talk_to(npc)
+	await wait(0.1)
+	check(Save.character() == "lamar" and village.player.body.sprite_frames == SheetAnims.frames("lamar"),
+		"Nach dem Ansprechen spielt man Lamar")
+	check(village.ui.bubble.visible and village.ui.bubble_label.text.contains("poppin"), "Lamar sagt «What's poppin', G?»")
+	check(npc.charakter == "player", "Jetzt laeuft der Ueberlebende herum")
+	village.talk_to(npc)
+	await wait(0.1)
+	check(Save.character() == "player" and npc.charakter == "lamar", "Zurueckwechseln geht genauso")
 	# Spieler kommt zu Fuss vom Platz durchs Tor zum Wagen (keine unsichtbare Wand im Weg)
 	var space: PhysicsDirectSpaceState2D = village.get_world_2d().direct_space_state
 	var blocked := 0

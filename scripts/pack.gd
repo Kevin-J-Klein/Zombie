@@ -12,6 +12,10 @@ extends RefCounted
 ##   props/helipad            Landeplatz-Markierung (gezeichnet)
 ##   ui/...                   Oberflaeche, 3x vergroessert (scharfe Pixel)
 ## Pack.anims(gruppe) liefert die Figuren-Animationen (fuer SheetAnims).
+##
+## Eigene Grafiken ausserhalb des Packs (erzeugt mit tools/make_character_art.py):
+##   art/characters/<skin>/   umgefaerbte Spielfiguren (SKINS), gleiches Raster wie der Player
+##   art/weapons/             Waffen, die es im Pack nicht gibt (CUSTOM_GUNS)
 
 const DIR := "res://art/asset_pack/"
 const T := 16
@@ -21,9 +25,10 @@ static var _tex := {}
 static var _anims := {}
 
 
-## Eine Datei aus dem Pack, z. B. Pack.file("Objects/Barrel_red_1.png")
+## Eine Datei aus dem Pack, z. B. Pack.file("Objects/Barrel_red_1.png").
+## Volle Pfade (res://...) gehen auch, z. B. fuer art/characters/.
 static func file(rel: String) -> Texture2D:
-	return load(DIR + rel)
+	return load(rel if rel.begins_with("res://") else DIR + rel)
 
 
 static func image(rel: String) -> Image:
@@ -251,6 +256,12 @@ const PLAYER_SHEETS := {
 	"death_side": [_CHAR + "Death/Character_side_death1_NoHands-Sheet6.png", 6],
 	"death_left": [_CHAR + "Death/Character_side-left_death1_NoHands-Sheet6.png", 6],
 }
+## Umgefaerbte Spielfiguren: gleiche Sheets wie PLAYER_SHEETS, aber aus dem eigenen Ordner.
+## hands = Farbtausch fuer die Haende an den Waffen (Pack-Hautfarbe -> Hautfarbe der Figur).
+const SKINS := {
+	"lamar": {"dir": "res://art/characters/lamar/",
+		"hands": {"e6c2b0": "be8056", "ba868f": "8c583c"}},
+}
 const ZOMBIE_DIRS := {"zombie_small": "Enemies/Zombie_Small/", "zombie_axe": "Enemies/Zombie_Axe/",
 	"zombie_big": "Enemies/Zombie_Big/"}
 ## Bildrate des Angriffs passend zur Ausholzeit im Spiel (0.3 s, Panzer 0.55 s)
@@ -274,10 +285,23 @@ static func anims(group: String) -> Dictionary:
 						"frames": 3, "fps": 18.0, "loop": false}
 				_anims[group] = fx
 			_:
+				if SKINS.has(group):
+					# umgefaerbte Spielfigur (z. B. Lamar): gleiche Animationen wie der Player
+					_anims[group] = _character(_skin_sheets(group), {"idle": 6.0, "run": 11.0, "death": 9.0}, {"death": false})
+					return _anims[group]
 				_anims[group] = _character(_zombie_sheets(ZOMBIE_DIRS[group]),
 					{"walk": 9.0, "idle": 6.0, "attack": ATTACK_FPS[group], "death": 10.0},
 					{"attack": false, "death": false})
 	return _anims[group]
+
+
+## Sheets einer umgefaerbten Spielfigur (gleiche Dateinamen wie im Pack, eigener Ordner)
+static func _skin_sheets(skin: String) -> Dictionary:
+	var sheets := {}
+	for anim: String in PLAYER_SHEETS:
+		var entry: Array = PLAYER_SHEETS[anim]
+		sheets[anim] = [SKINS[skin]["dir"] + String(entry[0]).get_file(), entry[1]]
+	return sheets
 
 
 ## Sucht die Sheets eines Zombies, z. B. Zombie_Small_Side-left_First-Attack-Sheet4.png -> attack_left
@@ -367,6 +391,11 @@ const WEAPONS := {
 	"dmr": ["Gun", ["#c8a060", 1.0, 1.35]],     # heller Holzschaft
 	"lmg": ["Gun", ["#6a7a3a", 1.0, 1.1]],      # oliv
 	"raygun": ["Gun", ["#40e0a0", 1.4, 1.6]],   # leuchtend gruen
+	"uzi": ["Uzi", []],                         # eigene Grafik (CUSTOM_GUNS)
+}
+## Waffen, die es im Pack nicht gibt: Bild in der Hand (nach rechts, mit Hand) und Hotbar-Symbol
+const CUSTOM_GUNS := {
+	"Uzi": {"held": "res://art/weapons/uzi_side.png", "icon": "res://art/weapons/icon_uzi.png"},
 }
 ## Griff (Drehpunkt in der Hand), Muendung und Grundwinkel je Pack-Waffe.
 ## Die Pistole wird im Pack leicht schraeg nach oben gehalten -> Winkel ausgleichen.
@@ -374,6 +403,7 @@ const HOLDS := {
 	"Pistol": {"grip": [2, 6], "muzzle": [8, 2], "angle": 12.0, "bullet": "pistol"},
 	"Gun": {"grip": [6, 7], "muzzle": [16, 3], "angle": 0.0, "bullet": "gun"},
 	"Shotgun": {"grip": [5, 6], "muzzle": [15, 2], "angle": 0.0, "bullet": "shotgun"},
+	"Uzi": {"grip": [5, 5], "muzzle": [14, 3], "angle": 0.0, "bullet": "pistol"},
 }
 
 
@@ -382,19 +412,40 @@ static func weapon(id: String) -> Dictionary:
 	return HOLDS[WEAPONS[id][0]]
 
 
-## "gun_<id>" = Waffe mit Haenden (erster Frame des Lauf-Sheets), "icon_<id>" = Hotbar-Symbol
+## "gun_<id>" = Waffe mit Haenden (erster Frame des Lauf-Sheets), "icon_<id>" = Hotbar-Symbol.
+## "gun_<id>~<skin>" = mit den Haenden einer umgefaerbten Figur (SKINS).
 static func _gun(name: String) -> Image:
-	var id := name.get_slice("_", 1)
+	var id_skin := name.get_slice("_", 1)
+	var id := id_skin.get_slice("~", 0)
+	var skin := id_skin.get_slice("~", 1) if id_skin.contains("~") else ""
 	var src: String = WEAPONS[id][0]
 	var tint: Array = WEAPONS[id][1]
 	var img: Image
-	if name.begins_with("icon_"):
+	if CUSTOM_GUNS.has(src):
+		img = image(CUSTOM_GUNS[src]["icon" if name.begins_with("icon_") else "held"])
+	elif name.begins_with("icon_"):
 		img = image("UI/Inventory/Objects/Icon_%s.png" % src)
 	else:
 		img = _frames_of("Character/Guns/%s/%s_side_idle-and-run-Sheet6.png" % [src, src], 6)[0]
-	if tint.is_empty():
-		return img
-	return _recolor(img, WOOD_HUE, Color(tint[0]).h, tint[1], tint[2], 0.09, 0.2, 0.62)
+	if not tint.is_empty():
+		img = _recolor(img, WOOD_HUE, Color(tint[0]).h, tint[1], tint[2], 0.09, 0.2, 0.62)
+	if skin != "" and SKINS.has(skin):
+		img = _swap_colors(img, SKINS[skin]["hands"])
+	return img
+
+
+## Tauscht exakte Farben aus (Hex ohne # -> Hex ohne #), z. B. die Hautfarbe der Haende.
+static func _swap_colors(img: Image, swaps: Dictionary) -> Image:
+	var out := img.duplicate() as Image
+	var map := {}
+	for from: String in swaps:
+		map[Color(from).to_html(false)] = Color(swaps[from])
+	for y in out.get_height():
+		for x in out.get_width():
+			var c := out.get_pixel(x, y)
+			if c.a > 0.0 and map.has(c.to_html(false)):
+				out.set_pixel(x, y, map[c.to_html(false)])
+	return out
 
 
 # ------------------------------------------------------------------ Objekte

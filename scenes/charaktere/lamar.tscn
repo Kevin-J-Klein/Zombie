@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="1_player"]
+[ext_resource type="Script" path="res://scripts/lamar.gd" id="2_lamar"]
+
+[node name="Lamar" instance=ExtResource("1_player")]
+script = ExtResource("2_lamar")
+figur = "lamar"
+lieblingswaffe = "uzi"
+faehigkeit_name = "Bulldoggen"
+
+[node name="Body" parent="." index="0"]
+gruppe = "lamar"

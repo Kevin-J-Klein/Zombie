@@ -68,6 +68,7 @@ var tear_window: Barricade
 var anim_t := 0.0
 var facing := "down"                 # side = rechts, left, up, down (wie die Pack-Animationen)
 var foot_y := -9.0                   # Sprite-Versatz, damit die Fuesse auf dem Ursprung stehen
+var held_t := 0.0                    # festgehalten (z. B. von Lamars Bulldoggen): steht still, greift nicht an
 
 @onready var body: FigurVorschau = $Body
 @onready var hurtbox: Area2D = $Hurtbox
@@ -123,6 +124,12 @@ func _physics_process(delta: float) -> void:
 		return
 	anim_t += delta
 	attack_cd -= delta
+	if held_t > 0.0 and state != St.RISE:
+		held_t -= delta
+		velocity = Vector2.ZERO
+		body.speed_scale = 1.0
+		_play("idle")
+		return
 	match state:
 		St.RISE:
 			state_t -= delta
@@ -221,6 +228,16 @@ func _chase(delta: float) -> void:
 	_play("walk")
 	# Schrittfrequenz passend zum Tempo
 	body.speed_scale = speed / schritt_tempo
+
+
+## Haelt den Zombie fuer sec Sekunden fest (bricht ein Ausholen ab).
+func hold(sec: float) -> void:
+	if state == St.DEAD or state == St.RISE:
+		return
+	if state == St.WINDUP:
+		state = St.CHASE
+		attack_cd = maxf(attack_cd, 0.3)
+	held_t = maxf(held_t, sec)
 
 
 func _tear_time() -> float:

@@ -12,13 +12,28 @@ const SCRAP_ESCAPE_BONUS := 200
 
 ## Startwaffen im Dorf-Shop: Waffe -> Preis in Schrott. Die Pistole besitzt man von Anfang an.
 ## Bewusst nur schwache bis mittlere Waffen, damit Wandkaeufe und Mystery-Box wichtig bleiben.
-const START_WEAPONS := {"pistol": 0, "smg": 400, "shotgun": 600, "rifle": 1000, "dmr": 1500}
+const START_WEAPONS := {"pistol": 0, "smg": 400, "uzi": 500, "shotgun": 600, "rifle": 1000, "dmr": 1500}
 const WEAPON_BLURB := {
 	"pistol": "Solide Startwaffe",
 	"smg": "Hohe Feuerrate, wenig Schaden",
+	"uzi": "Klein, laut, sehr schnell",
+
 	"shotgun": "Stark auf kurze Distanz",
 	"rifle": "Vielseitig, durchschlägt 2 Zombies",
 	"dmr": "Viel Schaden pro Schuss, langsam",
+}
+
+## Spielbare Charaktere (Auswahl im Haus am Kleiderschrank oder im Dorf ansprechen; gruss = was er
+## beim Wechsel sagt, anrede = fuer «Mit ... reden», sonst der Name). Jeder ist eine geerbte Szene von
+## scenes/player.tscn; figur = Animationen (Pack/SheetAnims), Rest steht im Inspektor der Szene.
+## Neuer Charakter: Grafik in tools/make_character_art.py + Pack.SKINS, Szene anlegen, hier eintragen.
+const CHARACTERS := {
+	"player": {"name": "Überlebender", "scene": "res://scenes/player.tscn", "figur": "player",
+		"info": "Keine Lieblingswaffe, keine Spezialfähigkeit",
+		"gruss": "Na gut, dann halt wieder ich.", "anrede": "dem Überlebenden"},
+	"lamar": {"name": "Lamar", "scene": "res://scenes/charaktere/lamar.tscn", "figur": "lamar",
+		"info": "Lieblingswaffe Uzi (+10 %). Spezial [X]: zwei Bulldoggen beschützen dich 20 s, alle 5 Runden",
+		"gruss": "What's poppin', G?"},
 }
 
 ## Auftraege. kind = welches Ereignis zaehlt (siehe Save.contract_event):

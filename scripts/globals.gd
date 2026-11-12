@@ -26,12 +26,18 @@ const WEAPONS := {
 		"auto": false, "pellets": 1, "spread": 0.3, "pierce": 4, "range": 420.0, "cost": 1750, "box": true, "splash": 0.0},
 	"lmg": {"name": "LMG", "damage": 58.0, "mag": 100, "reserve": 300, "rate": 0.085, "reload": 3.6,
 		"auto": true, "pellets": 1, "spread": 4.5, "pierce": 2, "range": 340.0, "cost": 0, "box": true, "splash": 0.0},
+	"uzi": {"name": "Uzi", "damage": 28.0, "mag": 32, "reserve": 192, "rate": 0.06, "reload": 1.4,
+		"auto": true, "pellets": 1, "spread": 5.0, "pierce": 1, "range": 220.0, "cost": 1100, "box": true, "splash": 0.0},
 	"raygun": {"name": "Strahlenkanone", "damage": 900.0, "mag": 20, "reserve": 160, "rate": 0.28, "reload": 2.4,
 		"auto": false, "pellets": 1, "spread": 1.0, "pierce": 1, "range": 340.0, "cost": 0, "box": true, "splash": 26.0},
 }
 
 ## Reihenfolge im Shop-Menue
-const SHOP_WEAPONS := ["smg", "shotgun", "rifle", "dmr"]
+const SHOP_WEAPONS := ["smg", "uzi", "shotgun", "rifle", "dmr"]
+
+## Charaktere: Schaden mit der Lieblingswaffe, Runden bis die Spezialfaehigkeit wieder bereit ist
+const FAV_WEAPON_BONUS := 1.1
+const ABILITY_ROUNDS := 5
 
 const PERKS := {
 	"revive": {"name": "Zweite Chance", "cost": 1500, "power": false, "color": Color("#4aa8e0"),
@@ -85,6 +91,7 @@ func _ready() -> void:
 	_keys("swap", [KEY_Q])
 	_keys("weapon_1", [KEY_1])
 	_keys("weapon_2", [KEY_2])
+	_keys("ability", [KEY_X])
 	_keys("pause", [KEY_ESCAPE, KEY_P])
 	_keys("fullscreen", [KEY_F11])
 	_mouse("shoot", MOUSE_BUTTON_LEFT)
@@ -95,6 +102,7 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	SheetAnims.clear()
+	Bulldog.clear()
 	Pack.clear()
 
 
@@ -133,8 +141,11 @@ func weapon_name(id: String, level: int) -> String:
 	return n
 
 
-## Waffe in der Hand (mit Haenden, zeigt nach rechts)
-func weapon_tex(id: String) -> Texture2D:
+## Waffe in der Hand (mit Haenden, zeigt nach rechts). skin = Figur, deren Haende sie haelt
+## (umgefaerbte Figuren aus Pack.SKINS, sonst die Haende des Players).
+func weapon_tex(id: String, skin := "") -> Texture2D:
+	if Pack.SKINS.has(skin):
+		return Pack.tex("guns/gun_%s~%s" % [id, skin])
 	return Pack.tex("guns/gun_" + id)
 
 

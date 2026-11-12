@@ -22,6 +22,7 @@ var prompt_label: Label
 var announce_label: Label
 var announce_sub: Label
 var timers_label: Label
+var ability_label: Label
 var flash_rect: ColorRect
 var low_rect: ColorRect
 var slots: Array[Dictionary] = []
@@ -155,6 +156,9 @@ func _build_status() -> void:
 	stamina_bar = _tex_bar("stamina", "stamina_fill", 11, 6)
 	for b in [hp_bar, armor_bar, stamina_bar]:
 		box.add_child(b)
+	# Spezialfaehigkeit des Charakters (z. B. Lamars Bulldoggen); leer bei Figuren ohne
+	ability_label = _label("", 16, Color("#8fe07a"))
+	box.add_child(ability_label)
 
 
 func _build_points_and_objective() -> void:
@@ -388,6 +392,8 @@ func _process(delta: float) -> void:
 	armor_bar.visible = p.armor > 0.0
 	stamina_bar.max_value = p.max_stamina
 	stamina_bar.value = p.stamina
+	ability_label.text = p.ability_text()
+	ability_label.add_theme_color_override("font_color", Color("#8fe07a") if p.ability_ready() else Color("#c8b89a"))
 	points_label.text = str(game.points)
 	round_label.text = str(game.round_num) if game.round_num > 0 else ""
 	objective_label.text = game.objective_text()

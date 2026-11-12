@@ -24,8 +24,29 @@ einen Shop, ein Auftragsbrett und den Wagen, mit dem man ins Level fährt.
 | Shift | sprinten |
 | E | benutzen / kaufen (halten: Barrikade reparieren) |
 | Q / 1 / 2 / Mausrad | Waffe wechseln |
+| X | Spezialfähigkeit des Charakters (z. B. Lamars Bulldoggen) |
 | Esc / P | Pause |
 | F11 | Vollbild an/aus (startet im Vollbild) |
+
+## Charaktere
+
+Im Dorf laufen die Charaktere herum, die man gerade nicht spielt (Lamar schlendert über den Platz).
+Mit E ansprechen = zu diesem Charakter wechseln; er begrüsst einen dann («What's poppin', G?»). Alternativ
+wählt man im Haus am **Kleiderschrank** den Charakter für die nächste Partie. Jeder Charakter hat eine
+Lieblingswaffe (+10 % Schaden) und eine Spezialfähigkeit (Taste X), die ab Runde 1 bereit ist und nach dem
+Einsetzen 5 Runden lang wieder auflädt. Der Stand der Fähigkeit steht im HUD unter den Balken.
+
+| Charakter | Lieblingswaffe | Spezialfähigkeit |
+|---|---|---|
+| Überlebender | – | – |
+| Lamar | Uzi | **Bulldoggen:** Tank und Biscuit beschützen ihn 20 s, beissen Zombies in seiner Nähe und halten sie dabei kurz fest |
+
+**Technik:** Jeder Charakter ist eine geerbte Szene von `scenes/player.tscn` (z. B. `scenes/charaktere/lamar.tscn`)
+mit eigenem Skript (`extends Player`). Lieblingswaffe, Name der Fähigkeit und Wartezeit stehen im Inspektor
+(Gruppe «Charakter»), die Fähigkeit selbst in `_use_ability()`. Die Grafiken (umgefärbte Spielfigur,
+Bulldoggen, Uzi) erzeugt `python3 tools/make_character_art.py` nach `art/characters/` und `art/weapons/`.
+Neuer Charakter: Farben in `tools/make_character_art.py` und `Pack.SKINS` eintragen, Szene anlegen und in
+`HubData.CHARACTERS` aufnehmen.
 
 ## Das Dorf (Hauptmenü)
 

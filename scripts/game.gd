@@ -57,7 +57,12 @@ func _ready() -> void:
 	level = $Level
 	level.build(self)
 
-	player = PLAYER_SCENE.instantiate()
+	# Gewaehlter Charakter (im Haus, Kleiderschrank); jeder ist eine geerbte Szene von player.tscn
+	var scene: PackedScene = PLAYER_SCENE
+	var chosen: Dictionary = HubData.CHARACTERS.get(Save.character(), {})
+	if chosen.get("scene", "") != "" and ResourceLoader.exists(chosen["scene"]):
+		scene = load(chosen["scene"])
+	player = scene.instantiate()
 	player.game = self
 	player.position = level.player_start
 	level.entities.add_child(player)

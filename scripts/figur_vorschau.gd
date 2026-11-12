@@ -8,7 +8,7 @@ extends AnimatedSprite2D
 ## damit keine erzeugten Bilder in der Szene landen.
 
 ## Welche Figur-Animationen die Vorschau zeigt (siehe SheetAnims / pack.gd)
-@export_enum("player", "zombie_small", "zombie_axe", "zombie_big") var gruppe := "player":
+@export_enum("player", "lamar", "zombie_small", "zombie_axe", "zombie_big") var gruppe := "player":
 	set(value):
 		gruppe = value
 		if is_inside_tree():

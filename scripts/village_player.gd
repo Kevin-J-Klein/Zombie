@@ -17,9 +17,8 @@ func _init() -> void:
 	collision_mask = G.L_WORLD
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
 	body = AnimatedSprite2D.new()
-	body.sprite_frames = SheetAnims.frames("player")
-	body.position.y = SheetAnims.foot_offset("player")
 	add_child(body)
+	_apply_figur()
 	var shape := CollisionShape2D.new()
 	var circle := CircleShape2D.new()
 	circle.radius = 4.5
@@ -34,6 +33,18 @@ func _init() -> void:
 
 func _ready() -> void:
 	body.play(&"idle_down")
+	# Charakter im Haus gewechselt -> Figur im Dorf sofort tauschen
+	Save.changed.connect(_apply_figur)
+
+
+## Figur des gewaehlten Charakters (HubData.CHARACTERS) anzeigen
+func _apply_figur() -> void:
+	var figur: String = HubData.CHARACTERS.get(Save.character(), {}).get("figur", "player")
+	var anim := body.animation
+	body.sprite_frames = SheetAnims.frames(figur)
+	body.position.y = SheetAnims.foot_offset(figur)
+	if is_inside_tree() and body.sprite_frames.has_animation(anim):
+		body.play(anim)
 
 
 func _physics_process(_delta: float) -> void:

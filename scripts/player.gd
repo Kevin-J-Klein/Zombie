@@ -1,7 +1,11 @@
 class_name Player
 extends CharacterBody2D
 ## Spieler: Bewegung (WASD), Zielen mit der Maus, Schiessen, Nachladen,
-## Nahkampf, Sprinten und Benutzen (E).
+## Nahkampf, Sprinten, Benutzen (E) und Spezialfaehigkeit (X).
+##
+## Charaktere (z. B. Lamar) sind geerbte Szenen von player.tscn mit eigenem Skript
+## (extends Player). Was einen Charakter ausmacht, steht im Inspektor (Gruppe «Charakter»);
+## die Spezialfaehigkeit ueberschreibt _use_ability().
 
 const WALK_SPEED := 68.0
 const SPRINT_SPEED := 108.0
@@ -11,7 +15,18 @@ const MELEE_DAMAGE := 150.0
 const AIM_HEIGHT := Vector2(0, -6)   # Brusthoehe: von hier aus wird gezielt und gezeichnet
 const GUN_REACH := 2.0               # Hand ein Stueck vor dem Koerper, damit der Schaft nicht hinten heraussteht
 
+@export_group("Charakter")
+## Animationen der Figur (Pack.anims / SheetAnims): "player" oder ein Skin aus Pack.SKINS
+@export var figur := "player"
+## Waffe, mit der dieser Charakter G.FAV_WEAPON_BONUS mehr Schaden macht (leer = keine)
+@export var lieblingswaffe := ""
+## Name der Spezialfaehigkeit fuer HUD und Meldungen (leer = keine Faehigkeit)
+@export var faehigkeit_name := ""
+## Nach dem Einsetzen so viele Runden warten, bis die Faehigkeit wieder bereit ist
+@export var faehigkeit_runden := 5
+
 var game: Node
+var faehigkeit_ab_runde := 1         # ab dieser Runde ist die Spezialfaehigkeit (wieder) bereit
 
 var max_hp := 150.0
 var hp := 150.0
@@ -45,8 +60,8 @@ var nearest: Node = null
 
 
 func _ready() -> void:
-	body.sprite_frames = SheetAnims.frames("player")
-	body.position.y = SheetAnims.foot_offset("player")
+	body.sprite_frames = SheetAnims.frames(figur)
+	body.position.y = SheetAnims.foot_offset(figur)
 	body.play(&"idle_down")
 	give_weapon("pistol")
 
@@ -107,6 +122,8 @@ func _physics_process(delta: float) -> void:
 	_update_interaction(delta)
 	if input_enabled:
 		_handle_weapons(delta)
+		if Input.is_action_just_pressed("ability"):
+			try_ability()
 
 
 ## Blickrichtung der Figur (passend zu den Pack-Animationen): side = rechts, left, up, down.
@@ -167,7 +184,10 @@ func reserve_size(w: Dictionary) -> int:
 
 
 func damage_of(w: Dictionary) -> float:
-	return G.WEAPONS[w["id"]]["damage"] * pow(2.0, w["level"])
+	var dmg: float = G.WEAPONS[w["id"]]["damage"] * pow(2.0, w["level"])
+	if w["id"] == lieblingswaffe:
+		dmg *= G.FAV_WEAPON_BONUS
+	return dmg
 
 
 func give_weapon(id: String) -> void:
@@ -228,7 +248,7 @@ func _update_gun_sprite() -> void:
 	var w := weapon()
 	var info := SheetAnims.weapon(w["id"])
 	var grip := Vector2(info["grip"][0], info["grip"][1])
-	gun_sprite.texture = G.weapon_tex(w["id"])
+	gun_sprite.texture = G.weapon_tex(w["id"], figur)
 	gun_sprite.offset = -grip
 	# Schraeg gezeichnete Waffen (Pistole) so drehen, dass der Lauf zur Maus zeigt
 	gun_sprite.rotation = deg_to_rad(info["angle"])
@@ -324,6 +344,38 @@ func _melee() -> void:
 		var off: Vector2 = z.global_position - global_position
 		if off.length() < 26.0 and (off.length() < 8.0 or off.normalized().dot(aim_dir) > 0.25):
 			z.hit(MELEE_DAMAGE, aim_dir, true)
+
+
+# ------------------------------------------------------------------ Spezialfaehigkeit
+
+func has_ability() -> bool:
+	return faehigkeit_name != ""
+
+
+## Bereit ab der ersten Runde, danach wieder faehigkeit_runden Runden nach dem Einsetzen.
+func ability_ready() -> bool:
+	return has_ability() and not dead and game.round_num > 0 and game.round_num >= faehigkeit_ab_runde
+
+
+func try_ability() -> bool:
+	if not ability_ready() or not _use_ability():
+		return false
+	faehigkeit_ab_runde = game.round_num + faehigkeit_runden
+	return true
+
+
+## Text fuers HUD, z. B. "Bulldoggen [X] bereit" (leer = Charakter ohne Faehigkeit)
+func ability_text() -> String:
+	if not has_ability():
+		return ""
+	if ability_ready():
+		return "%s [X] bereit" % faehigkeit_name
+	return "%s ab Runde %d" % [faehigkeit_name, maxi(faehigkeit_ab_runde, 1)]
+
+
+## Ueberschreiben: setzt die Faehigkeit ein; true = hat geklappt (dann beginnt die Wartezeit).
+func _use_ability() -> bool:
+	return false
 
 
 # ------------------------------------------------------------------ Schaden

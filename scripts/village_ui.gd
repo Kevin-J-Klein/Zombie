@@ -18,6 +18,10 @@ var slot_label: Label
 var prompt_label: Label
 var alert_label: Label
 var tags: Array[Dictionary] = []
+var bubble: PanelContainer        # Sprechblase (say)
+var bubble_label: Label
+var bubble_node: Node2D
+var bubble_t := 0.0
 var dim: ColorRect
 var window: Control          # das offene Fenster (oder null)
 var window_kind := ""
@@ -221,15 +225,72 @@ func _build_tags() -> void:
 		p.add_child(h)
 		root.add_child(p)
 		tags.append({"node": p, "pos": t["pos"]})
+	# Namensschild der Bewohner (folgt der Figur, Name je nach Charakter)
+	for npc: VillageNpc in village.npcs:
+		var p := PanelContainer.new()
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(0.12, 0.08, 0.14, 0.65)
+		sb.set_corner_radius_all(4)
+		sb.content_margin_left = 8
+		sb.content_margin_right = 8
+		sb.content_margin_bottom = 2
+		p.add_theme_stylebox_override("panel", sb)
+		p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var l := _label("", 13)
+		p.add_child(l)
+		root.add_child(p)
+		tags.append({"node": p, "follow": npc, "label": l})
+	# Sprechblase
+	bubble = PanelContainer.new()
+	var bs := StyleBoxFlat.new()
+	bs.bg_color = Color("#f6ecd6")
+	bs.border_color = Color("#2c1d35")
+	bs.set_border_width_all(3)
+	bs.set_corner_radius_all(8)
+	bs.set_content_margin_all(8)
+	bs.content_margin_left = 14
+	bs.content_margin_right = 14
+	bubble.add_theme_stylebox_override("panel", bs)
+	bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bubble_label = _label("", 20, Color("#2c1d35"))
+	bubble.add_child(bubble_label)
+	bubble.visible = false
+	root.add_child(bubble)
 
 
-func _process(_delta: float) -> void:
+## Sprechblase ueber einer Figur im Dorf (verschwindet nach ein paar Sekunden)
+func say(text: String, who: Node2D) -> void:
+	if text == "":
+		return
+	bubble_label.text = "«%s»" % text
+	bubble_node = who
+	bubble_t = 2.8
+	bubble.visible = true
+	bubble.modulate.a = 1.0
+
+
+func _process(delta: float) -> void:
 	var xf := get_viewport().get_canvas_transform()
 	for t: Dictionary in tags:
 		var node: Control = t["node"]
-		var world: Vector2 = t["pos"]
+		var world: Vector2
+		if t.has("follow"):
+			var npc: VillageNpc = t["follow"]
+			node.visible = npc.charakter != "" and not window_open()
+			t["label"].text = npc.display_name
+			world = npc.global_position + Vector2(0, -22)
+		else:
+			world = t["pos"]
 		node.reset_size()
 		node.position = (xf * world - node.size * Vector2(0.5, 1.0)).round()
+	if bubble.visible:
+		bubble_t -= delta
+		bubble.modulate.a = clampf(bubble_t / 0.4, 0.0, 1.0)
+		if bubble_t <= 0.0 or not is_instance_valid(bubble_node):
+			bubble.visible = false
+		else:
+			bubble.reset_size()
+			bubble.position = (xf * (bubble_node.global_position + Vector2(0, -24)) - bubble.size * Vector2(0.5, 1.0)).round()
 
 
 func set_prompt(text: String) -> void:
@@ -336,7 +397,7 @@ func _input(event: InputEvent) -> void:
 # ------------------------------------------------------------------ Haus: Rekorde und Startwaffe
 
 func _build_house() -> void:
-	var v := _window("DEIN HAUS", 800, 500)
+	var v := _window("DEIN HAUS", 800, 610)
 	var cols := _hbox(32)
 	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(cols)
@@ -365,6 +426,7 @@ func _build_house() -> void:
 	for egg in [["gnomes", "Alle Glückspilze erwischt"], ["escape", "Mit dem Helikopter geflohen"]]:
 		var found: bool = d["eggs"][egg[0]]
 		left.add_child(_label(("✔  " + egg[1]) if found else "?  ? ? ?", 18, GREEN if found else MUTED))
+	_build_wardrobe(left)
 
 	var right := _vbox(8)
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -408,6 +470,41 @@ func _build_house() -> void:
 	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	right.add_child(info)
 	_footer(v, "E oder Esc schliesst")
+
+
+## Kleiderschrank: Charakter fuer die naechste Partie waehlen (HubData.CHARACTERS)
+func _build_wardrobe(box: VBoxContainer) -> void:
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(0, 10)
+	box.add_child(gap)
+	box.add_child(_label("KLEIDERSCHRANK", 14, GOLD))
+	var row := _hbox(8)
+	box.add_child(row)
+	for id: String in HubData.CHARACTERS:
+		var def: Dictionary = HubData.CHARACTERS[id]
+		var chosen := Save.character() == id
+		var cell := _vbox(2)
+		var b := Button.new()
+		b.custom_minimum_size = Vector2(76, 76)
+		b.focus_mode = Control.FOCUS_NONE
+		for st in ["normal", "hover", "pressed", "disabled"]:
+			b.add_theme_stylebox_override(st, G.pack_cell(chosen or st == "hover"))
+		b.icon = SheetAnims.frames(def["figur"]).get_frame_texture(&"idle_down", 0)
+		b.expand_icon = true
+		b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		b.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		b.pressed.connect(Save.set_character.bind(id))
+		cell.add_child(b)
+		var n := _label(def["name"], 13, ORANGE if chosen else TEXT)
+		n.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		n.custom_minimum_size = Vector2(76, 0)
+		n.clip_text = true
+		cell.add_child(n)
+		row.add_child(cell)
+	var info := _label(HubData.CHARACTERS[Save.character()]["info"], 14, MUTED)
+	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	info.custom_minimum_size = Vector2(320, 0)
+	box.add_child(info)
 
 
 # ------------------------------------------------------------------ Shop: Startwaffen fuer Schrott
