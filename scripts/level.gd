@@ -1,12 +1,27 @@
+@tool
 class_name Level
 extends Node2D
-## Baut das Level aus der Textkarte (level_data.gd): Kacheln, Kollision,
-## Wegfindung fuer Zombies und alle Objekte (Tueren, Fenster, Automaten ...).
+## Ein Zombie-Level. Wird im Godot-Editor gebaut (z. B. scenes/vorstadt.tscn):
+##   Karte     TileMapLayer mit dem Tileset art/karte.tres - Waende, Fenster, Hecke und
+##             Bodenarten malen. Daraus entstehen Grafik, Kollision und Zombie-Wegfindung.
+##   Objekte   LevelObject-Knoten: Startpunkt, Tueren, Wandkaeufe, Automaten, Kisten ...
+## Im Editor zeigt das Skript ueber der Karte eine Vorschau mit der echten Grafik
+## (wird nicht gespeichert). Beim Spielstart baut build() daraus das Level.
 
-const LevelData := preload("res://scripts/level_data.gd")
+## Kartenzeichen je Kachel im Tileset art/karte.tres (Spalte im Atlas)
+const KARTE_ZEICHEN := ["#", "W", " ", ".", ",", ":", "~", ";", "X", "Z", "_"]
+
+## Im Editor: true = die gemalte Karte statt der Vorschau zeigen (zum Pruefen von Spawns usw.)
+@export var karte_zeigen := false:
+	set(value):
+		karte_zeigen = value
+		if _preview != null:
+			_preview.visible = not value
+
 ## Grafiken kommen direkt aus dem Asset-Pack (siehe pack.gd): Boden- und Wand-Atlas setzt
 ## Pack.tex("tiles") / Pack.tex("walls") aus den Pack-Tilesets zusammen.
 
+const TILE := 16
 const SRC_FLOOR := 0
 const SRC_WALL := 1          # Spalte = Nachbarmaske (N=1, O=2, S=4, W=8)
 const WALL_TOP := 0          # Zeilen im Wand-Atlas
@@ -14,14 +29,7 @@ const WALL_FRONT := 1
 const WALL_WINDOW := 2
 const T_HEDGE := 7
 const T_WOODS_GROUND := 8    # Waldboden ohne Buesch (Spawns, Luecken in der Hecke)
-const FLOOR_TILES := {".": 0, ",": 1, ":": 2, "~": 3, ";": 4, "X": 9}
-## Kartenzeichen -> Varianten aus dem Pack (eine wird pro Zelle fest ausgewuerfelt)
-const SOLID_PROPS := {
-	"B": ["Objects/Cardboard_1.png", "Objects/Cardboard_2.png", "Objects/Pallet_1.png"],
-	"O": ["Objects/Barrel_rust_red_1.png", "Objects/Barrel_blue_1.png", "Objects/Barrel_rust_blue_1.png"],
-	"C": ["Objects/Garbage-Bin_4.png", "Objects/Trash-can_1.png"],
-	"Y": ["Objects/Nature/Green/Tree_3_Normal_Green.png", "Objects/Nature/Green/Tree_10_Small-oak_Green.png"],
-}
+const FLOOR_TILES := {".": 0, ",": 1, ":": 2, "~": 3, ";": 4, "X": 9, "_": 8}
 const WOODS_TREES := ["Objects/Nature/Dark-Green/Tree_1_Spruce_Dark-Green.png",
 	"Objects/Nature/Dark-Green/Tree_3_Normal_Dark-Green.png", "Objects/Nature/Dark-Green/Tree_8_Birch_Dark-Green.png",
 	"Objects/Nature/Dark-Green/Tree_2_Spruce-Sparse_Dark-Green.png"]
@@ -37,23 +45,69 @@ var entities: Node2D
 var fx: Node2D
 
 var windows := {}                         # Vector2i -> Barricade
-var doors := {}                           # String -> Door
+var doors := {}                           # Tuer-Name -> Door
 var spawns: Array[Vector2i] = []
 var active_spawns: Array[Vector2i] = []
 var reached := {}                         # Zellen, die der Spieler aktuell erreichen kann
 var extraction_cells := {}
 var player_start := Vector2.ZERO
-var objects := {}                         # Kartenzeichen -> Array von Nodes (fuer Tests/Quest)
+var objects := {}                         # Art -> Array von Nodes (fuer Tests/Quest), siehe _register
 
+var _preview: Node2D                      # nur im Editor
+var _preview_dirty := false
+
+
+# ------------------------------------------------------------------ Karte lesen
+
+## Liest die gemalte Karte als Zeichen-Raster (unbemalt = Hecke).
+func _read_grid() -> void:
+	grid.clear()
+	var karte: TileMapLayer = get_node_or_null("Karte")
+	size = Vector2i.ZERO if karte == null else karte.get_used_rect().end
+	for y in size.y:
+		var row := ""
+		for x in size.x:
+			var c := Vector2i(x, y)
+			var ch := " "
+			if karte.get_cell_source_id(c) != -1:
+				var a := karte.get_cell_atlas_coords(c)
+				if a.x >= 0 and a.x < KARTE_ZEICHEN.size():
+					ch = KARTE_ZEICHEN[a.x]
+			row += ch
+		grid.append(row)
+
+
+func _markers() -> Array[LevelObject]:
+	var out: Array[LevelObject] = []
+	var holder := get_node_or_null("Objekte")
+	if holder == null:
+		return out
+	for n in holder.find_children("*", "", true, false):
+		if n is LevelObject:
+			out.append(n)
+	return out
+
+
+# ------------------------------------------------------------------ Aufbau (Spiel)
 
 func build(p_game: Node) -> void:
 	game = p_game
-	grid.assign(LevelData.MAP)
-	size = Vector2i(grid[0].length(), grid.size())
+	_read_grid()
+	var markers := _markers()
+	# Die Editor-Knoten werden nur gelesen; im Spiel entstehen daraus echte Objekte
+	var karte := get_node_or_null("Karte")
+	if karte != null:
+		karte.visible = false
+		karte.collision_enabled = false
+	var holder := get_node_or_null("Objekte")
+	if holder != null:
+		holder.name = "Objekte_Editor"
+		holder.visible = false
+		holder.process_mode = Node.PROCESS_MODE_DISABLED
 
 	floor_map = TileMapLayer.new()
 	floor_map.name = "Boden"
-	floor_map.tile_set = _make_tileset()
+	floor_map.tile_set = _make_tileset(true)
 	add_child(floor_map)
 	decals = Node2D.new()
 	decals.name = "Blut"
@@ -67,95 +121,90 @@ func build(p_game: Node) -> void:
 	add_child(fx)
 
 	astar.region = Rect2i(Vector2i.ZERO, size)
-	astar.cell_size = Vector2(G.TILE, G.TILE)
-	astar.offset = Vector2(G.TILE, G.TILE) * 0.5
+	astar.cell_size = Vector2(TILE, TILE)
+	astar.offset = Vector2(TILE, TILE) * 0.5
 	astar.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
 	astar.update()
 
-	var door_cells := {}
+	_paint(floor_map, entities, true)
+	for m in markers:
+		_add_object(m)
+	_add_helipad(floor_map)
+	if holder != null:
+		holder.queue_free()
+
+
+## Malt Boden und Waende aus dem Raster. Im Spiel (live) kommen Kollision, Wegfindung,
+## Fenster und Spawns dazu; im Editor nur die Grafik.
+func _paint(layer: TileMapLayer, trees_parent: Node2D, live: bool) -> void:
 	for y in size.y:
 		for x in size.x:
 			var ch := grid[y][x]
 			var cell := Vector2i(x, y)
 			var variant := posmod(x * 7 + y * 13 + (x * y) % 5, 4)
 			if ch == " ":
-				floor_map.set_cell(cell, SRC_FLOOR, Vector2i(T_HEDGE, variant))
-				astar.set_point_solid(cell, true)
-				_maybe_add_tree(x, y)
-			elif ch == "#" or LevelData.WALLBUYS.has(ch):
+				layer.set_cell(cell, SRC_FLOOR, Vector2i(T_HEDGE, variant))
+				if live:
+					astar.set_point_solid(cell, true)
+				_maybe_add_tree(x, y, trees_parent)
+			elif ch == "#":
 				var front := _is_open(x, y + 1)
-				floor_map.set_cell(cell, SRC_WALL, Vector2i(_wall_mask(x, y), WALL_FRONT if front else WALL_TOP))
-				astar.set_point_solid(cell, true)
-				if LevelData.WALLBUYS.has(ch):
-					_add_wallbuy(cell, LevelData.WALLBUYS[ch])
+				layer.set_cell(cell, SRC_WALL, Vector2i(_wall_mask(x, y), WALL_FRONT if front else WALL_TOP))
+				if live:
+					astar.set_point_solid(cell, true)
 			elif ch == "W":
 				var mask := _wall_mask(x, y)
 				if mask == 0:
 					# Fenster mitten in der Hecke: nur eine Luecke, die Bretter zeichnet die Barrikade
-					floor_map.set_cell(cell, SRC_FLOOR, Vector2i(T_WOODS_GROUND, variant))
+					layer.set_cell(cell, SRC_FLOOR, Vector2i(T_WOODS_GROUND, variant))
 				else:
-					floor_map.set_cell(cell, SRC_WALL, Vector2i(mask, WALL_WINDOW))
-				_add_window(cell)
+					layer.set_cell(cell, SRC_WALL, Vector2i(mask, WALL_WINDOW))
+				if live:
+					_add_window(cell)
 			else:
 				var t: int = FLOOR_TILES.get(ch, -1)
 				if t == -1:
 					t = _neighbor_floor(x, y)
-				floor_map.set_cell(cell, SRC_FLOOR, Vector2i(t, variant))
+				layer.set_cell(cell, SRC_FLOOR, Vector2i(t, variant))
 				if ch == "X":
 					extraction_cells[cell] = true
-				elif ch == "Z":
+				elif ch == "Z" and live:
 					spawns.append(cell)
-				elif ch == "P":
-					player_start = cell_center(cell)
-				elif LevelData.DOORS.has(ch):
-					if not door_cells.has(ch):
-						door_cells[ch] = []
-					door_cells[ch].append(cell)
-					astar.set_point_solid(cell, true)
-				elif not FLOOR_TILES.has(ch):
-					_add_object(ch, cell)
-
-	for id in door_cells:
-		var d := Door.new()
-		d.setup(game, self, id, door_cells[id])
-		entities.add_child(d)
-		doors[id] = d
-
-	_add_helipad()
 
 
-func _make_tileset() -> TileSet:
+func _make_tileset(physics: bool) -> TileSet:
 	var ts := TileSet.new()
-	ts.tile_size = Vector2i(G.TILE, G.TILE)
-	ts.add_physics_layer()
-	ts.set_physics_layer_collision_layer(0, G.L_WORLD)
-	ts.set_physics_layer_collision_mask(0, 0)
-	var h := G.TILE * 0.5
+	ts.tile_size = Vector2i(TILE, TILE)
+	if physics:
+		ts.add_physics_layer()
+		ts.set_physics_layer_collision_layer(0, G.L_WORLD)
+		ts.set_physics_layer_collision_mask(0, 0)
+	var h := TILE * 0.5
 	var poly := PackedVector2Array([Vector2(-h, -h), Vector2(h, -h), Vector2(h, h), Vector2(-h, h)])
 
 	# Boden: 10 Typen x 4 Varianten, nur die Hecke ist fest
 	var floor_src := TileSetAtlasSource.new()
 	floor_src.texture = Pack.tex("tiles")
-	floor_src.texture_region_size = Vector2i(G.TILE, G.TILE)
+	floor_src.texture_region_size = Vector2i(TILE, TILE)
 	ts.add_source(floor_src, SRC_FLOOR)
 	for tx in 10:
 		for v in 4:
 			var c := Vector2i(tx, v)
 			floor_src.create_tile(c)
-			if tx == T_HEDGE:
+			if physics and tx == T_HEDGE:
 				_solid_tile(floor_src, c, poly)
 
 	# Waende: 16 Nachbarmasken x (oben, Vorderseite, Fenster). Fenster haben keine
 	# Kollision - dort sperrt die Barrikade nur den Spieler.
 	var wall_src := TileSetAtlasSource.new()
 	wall_src.texture = Pack.tex("walls")
-	wall_src.texture_region_size = Vector2i(G.TILE, G.TILE)
+	wall_src.texture_region_size = Vector2i(TILE, TILE)
 	ts.add_source(wall_src, SRC_WALL)
 	for m in 16:
 		for row in 3:
 			var c := Vector2i(m, row)
 			wall_src.create_tile(c)
-			if row != WALL_WINDOW:
+			if physics and row != WALL_WINDOW:
 				_solid_tile(wall_src, c, poly)
 	return ts
 
@@ -168,7 +217,7 @@ func _solid_tile(src: TileSetAtlasSource, c: Vector2i, poly: PackedVector2Array)
 
 func _is_wall(x: int, y: int) -> bool:
 	var ch := _char(x, y)
-	return ch == "#" or ch == "W" or LevelData.WALLBUYS.has(ch)
+	return ch == "#" or ch == "W"
 
 
 ## Welche Nachbarn sind ebenfalls Wand? Bestimmt, wo die Mauerkrone einen Rand bekommt.
@@ -186,7 +235,7 @@ func _wall_mask(x: int, y: int) -> int:
 
 
 ## Baeume im Wald: nur tief im Dickicht, damit sie nichts Begehbares verdecken.
-func _maybe_add_tree(x: int, y: int) -> void:
+func _maybe_add_tree(x: int, y: int, parent: Node2D) -> void:
 	if posmod(x * 13 + y * 7 + (x * y) % 3, 5) != 0:
 		return
 	for o in [Vector2i(-1, -2), Vector2i(0, -2), Vector2i(1, -2), Vector2i(-1, -1), Vector2i(0, -1),
@@ -199,11 +248,11 @@ func _maybe_add_tree(x: int, y: int) -> void:
 	s.texture = Pack.file(WOODS_TREES[posmod(x * 5 + y * 3, WOODS_TREES.size())])
 	s.position = cell_center(Vector2i(x, y)) + Vector2(posmod(x * 3 + y, 5) - 2, 7.0)
 	s.offset = Vector2(0, -s.texture.get_height() * 0.5)
-	entities.add_child(s)
+	parent.add_child(s)
 
 
 ## Markierung auf dem Landeplatz (X-Felder), mittig ueber alle Felder.
-func _add_helipad() -> void:
+func _add_helipad(parent: Node2D) -> void:
 	if extraction_cells.is_empty():
 		return
 	var r := Rect2i(extraction_cells.keys()[0], Vector2i.ONE)
@@ -211,8 +260,8 @@ func _add_helipad() -> void:
 		r = r.expand(c).expand(c + Vector2i.ONE)
 	var s := Sprite2D.new()
 	s.texture = Pack.tex("props/helipad")
-	s.position = Vector2(r.position + r.end) * 0.5 * G.TILE
-	floor_map.add_child(s)
+	s.position = Vector2(r.position + r.end) * 0.5 * TILE
+	parent.add_child(s)
 
 
 func _char(x: int, y: int) -> String:
@@ -223,21 +272,23 @@ func _char(x: int, y: int) -> String:
 
 func _is_open(x: int, y: int) -> bool:
 	var ch := _char(x, y)
-	return not (ch == " " or ch == "#" or ch == "W" or LevelData.WALLBUYS.has(ch))
+	return not (ch == " " or ch == "#" or ch == "W")
 
 
 func _neighbor_floor(x: int, y: int) -> int:
 	for o in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
 		var ch := _char(x + o.x, y + o.y)
-		if FLOOR_TILES.has(ch) and ch != "X":
+		if FLOOR_TILES.has(ch) and ch != "X" and ch != "_":
 			return FLOOR_TILES[ch]
 	return T_WOODS_GROUND
 
 
-func _register(ch: String, node: Node) -> void:
-	if not objects.has(ch):
-		objects[ch] = []
-	objects[ch].append(node)
+## objects-Schluessel: Waffen-ID (Wandkauf), Perk-ID, "shop", "box", "upgrade", "power",
+## "radio", "part" (Funkteile), "gnome" (Gluckspilze), "W" (Fenster)
+func _register(key: String, node: Node) -> void:
+	if not objects.has(key):
+		objects[key] = []
+	objects[key].append(node)
 
 
 func _add_solid(node: Node2D, w := 16.0, h := 14.0) -> void:
@@ -277,17 +328,55 @@ func _add_wallbuy(cell: Vector2i, weapon_id: String) -> void:
 	_register(weapon_id, it)
 
 
-func _add_object(ch: String, cell: Vector2i) -> void:
+const INTERACT_KINDS := {"Shop": "shop", "Mystery-Box": "box", "Werkbank": "upgrade",
+	"Stromschalter": "power", "Funkgerät": "radio", "Perk": "perk"}
+
+
+func _add_object(m: LevelObject) -> void:
+	var cell := m.cell()
+	if not in_bounds(cell):
+		push_warning("%s liegt ausserhalb der Karte (%s)" % [m.name, cell])
+		return
 	var pos := cell_center(cell)
-	if SOLID_PROPS.has(ch):
+	match m.art:
+		"Startpunkt":
+			player_start = pos
+			return
+		"Tür":
+			var d := Door.new()
+			d.setup(game, self, m.tuer_name, m.cells(), m.preis, m.tuer_senkrecht())
+			d.opens_on_escape = m.bei_flucht_offen
+			entities.add_child(d)
+			doors[m.tuer_name] = d
+			for c in d.cells:
+				astar.set_point_solid(c, true)
+			return
+		"Wandkauf":
+			_add_wallbuy(cell, m.waffe)
+			return
+		"Funkteil":
+			var p := Pickup.new()
+			p.position = pos
+			p.setup(game)
+			entities.add_child(p)
+			_register("part", p)
+			return
+		"Glückspilz":
+			var g := Gnome.new()
+			g.position = pos
+			g.setup(game)
+			entities.add_child(g)
+			_register("gnome", g)
+			return
+
+	if m.is_solid_prop():
 		var n := Node2D.new()
 		n.position = pos
 		var s := Sprite2D.new()
-		var variants: Array = SOLID_PROPS[ch]
-		s.texture = Pack.file(variants[posmod(cell.x * 31 + cell.y * 17, variants.size())])
+		s.texture = m.texture()
 		s.position = Vector2(0, 8.0 - s.texture.get_height() * 0.5)
 		n.add_child(s)
-		if ch == "Y":
+		if m.art == "Baum":
 			_add_solid(n, 8.0, 8.0)
 		else:
 			_add_solid(n)
@@ -295,58 +384,29 @@ func _add_object(ch: String, cell: Vector2i) -> void:
 		astar.set_point_solid(cell, true)
 		return
 
-	if ch == "x" or ch == "y" or ch == "z":
-		var p := Pickup.new()
-		p.position = pos
-		p.setup(game)
-		entities.add_child(p)
-		_register("part", p)
+	if not INTERACT_KINDS.has(m.art):
+		push_warning("Unbekannte Art '%s' bei %s" % [m.art, m.name])
 		return
-	if ch == "o":
-		var g := Gnome.new()
-		g.position = pos
-		g.setup(game)
-		entities.add_child(g)
-		_register("gnome", g)
-		return
-
+	var kind: String = INTERACT_KINDS[m.art]
 	var it := Interactable.new()
 	it.position = pos
-	match ch:
-		"A":
-			it.setup(game, "shop", Pack.tex("props/shop"))
-		"M":
-			it.setup(game, "box", Pack.file("UI/Inventory/Objects/Icon_Bullet-crate_Green.png"))
-		"U":
-			it.setup(game, "upgrade", Pack.file("Objects/Washing-machine.png"))
-		"E":
-			# Stromschalter: Metalltuer (Stromkasten), leuchtet bei Strom
-			it.setup(game, "power", Pack.file("Objects/Buildings/Door_4_Metal.png"))
-		"K":
-			it.setup(game, "radio", Pack.file("Objects/Buildings/Antenna_1.png"))
-		_:
-			if LevelData.PERK_CHARS.has(ch):
-				var perk: String = LevelData.PERK_CHARS[ch]
-				# Perk-Automaten sind schon in der Perk-Farbe eingefaerbt
-				it.setup(game, "perk", Pack.tex("props/perk_" + perk))
-				it.perk_id = perk
-			else:
-				push_warning("Unbekanntes Kartenzeichen '%s' bei %s" % [ch, cell])
-				return
+	it.setup(game, kind, m.texture())
+	if kind == "perk":
+		it.perk_id = m.perk
 	_add_solid(it)
 	entities.add_child(it)
 	astar.set_point_solid(cell, true)
-	_register(ch, it)
+	_register(m.perk if kind == "perk" else kind, it)
 
 
 # ------------------------------------------------------------------ Abfragen
 
 func to_cell(pos: Vector2) -> Vector2i:
-	return Vector2i(floori(pos.x / G.TILE), floori(pos.y / G.TILE))
+	return Vector2i(floori(pos.x / TILE), floori(pos.y / TILE))
 
 
 func cell_center(cell: Vector2i) -> Vector2:
-	return Vector2(cell.x + 0.5, cell.y + 0.5) * G.TILE
+	return Vector2(cell.x + 0.5, cell.y + 0.5) * TILE
 
 
 func in_bounds(cell: Vector2i) -> bool:
@@ -354,7 +414,7 @@ func in_bounds(cell: Vector2i) -> bool:
 
 
 func bounds() -> Rect2:
-	return Rect2(Vector2.ZERO, Vector2(size) * G.TILE)
+	return Rect2(Vector2.ZERO, Vector2(size) * TILE)
 
 
 func find_path(from: Vector2, to: Vector2) -> PackedVector2Array:
@@ -420,3 +480,56 @@ func is_extraction(pos: Vector2) -> bool:
 
 func random_spawn() -> Vector2:
 	return cell_center(active_spawns[randi() % active_spawns.size()])
+
+
+# ------------------------------------------------------------------ Vorschau im Editor
+
+func _ready() -> void:
+	if not Engine.is_editor_hint():
+		return
+	var karte := get_node_or_null("Karte") as TileMapLayer
+	if karte != null and not karte.changed.is_connected(_queue_preview):
+		karte.changed.connect(_queue_preview)
+	_queue_preview()
+
+
+func _queue_preview() -> void:
+	if _preview_dirty:
+		return
+	_preview_dirty = true
+	_rebuild_preview.call_deferred()
+
+
+## Zeichnet die gemalte Karte mit der echten Grafik (Waende mit Mauerkrone, Hecke, Baeume,
+## Landeplatz). Haengt als interner Knoten an «Karte» und wird nicht gespeichert.
+func _rebuild_preview() -> void:
+	_preview_dirty = false
+	var karte := get_node_or_null("Karte") as TileMapLayer
+	if karte == null:
+		return
+	if _preview != null:
+		_preview.queue_free()
+	_read_grid()
+	extraction_cells.clear()
+	_preview = Node2D.new()
+	_preview.name = "Vorschau"
+	_preview.visible = not karte_zeigen
+	var layer := TileMapLayer.new()
+	layer.tile_set = _make_tileset(false)
+	_preview.add_child(layer)
+	var deko := Node2D.new()
+	deko.y_sort_enabled = true
+	_preview.add_child(deko)
+	_paint(layer, deko, false)
+	_add_helipad(layer)
+	# Zombie-Spawns rot markieren, sonst sieht man sie in der Hecke nicht
+	var marks := Node2D.new()
+	marks.draw.connect(func() -> void:
+		for y in size.y:
+			for x in size.x:
+				if grid[y][x] == "Z":
+					var r := Rect2(Vector2(x, y) * TILE, Vector2(TILE, TILE)).grow(-2.0)
+					marks.draw_rect(r, Color(0.9, 0.15, 0.15, 0.35))
+					marks.draw_rect(r, Color(1.0, 0.3, 0.3), false, 1.0))
+	_preview.add_child(marks)
+	karte.add_child(_preview, false, Node.INTERNAL_MODE_BACK)

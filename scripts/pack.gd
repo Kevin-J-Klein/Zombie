@@ -1,3 +1,4 @@
+@tool
 class_name Pack
 extends RefCounted
 ## Alle Grafiken kommen direkt aus dem Asset-Pack (art/asset_pack/).

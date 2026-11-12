@@ -1,0 +1,34 @@
+[gd_resource type="TileSet" format=3]
+
+[ext_resource type="Texture2D" path="res://art/karte.png" id="1_q0y8m"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_tr4uj"]
+resource_name = "Karte"
+texture = ExtResource("1_q0y8m")
+0:0/0 = 0
+0:0/0/custom_data_0 = "Wand"
+1:0/0 = 0
+1:0/0/custom_data_0 = "Fenster (Zombie-Eingang)"
+2:0/0 = 0
+2:0/0/custom_data_0 = "Hecke / Wald"
+3:0/0 = 0
+3:0/0/custom_data_0 = "Holzboden"
+4:0/0 = 0
+4:0/0/custom_data_0 = "Fliesen"
+5:0/0 = 0
+5:0/0/custom_data_0 = "Asphalt"
+6:0/0 = 0
+6:0/0/custom_data_0 = "Gras"
+7:0/0 = 0
+7:0/0/custom_data_0 = "Erde"
+8:0/0 = 0
+8:0/0/custom_data_0 = "Landeplatz"
+9:0/0 = 0
+9:0/0/custom_data_0 = "Zombie-Spawn"
+10:0/0 = 0
+10:0/0/custom_data_0 = "Waldboden (begehbar)"
+
+[resource]
+custom_data_layer_0/name = "name"
+custom_data_layer_0/type = 4
+sources/0 = SubResource("TileSetAtlasSource_tr4uj")

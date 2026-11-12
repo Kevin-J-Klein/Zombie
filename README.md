@@ -67,8 +67,10 @@ Die Dateien liegen in `user://save_1.json` bis `save_3.json`, die Einstellungen 
 | Pfad | Inhalt |
 |---|---|
 | `scripts/globals.gd` | Autoload `G`: Waffen, Perks, Preise, Rundenformeln, Tastenbelegung |
-| `scripts/level_data.gd` | Die Karte als Text plus Türpreise und Wandkäufe |
-| `scripts/level.gd` | Baut aus der Karte Kacheln, Kollision, Wegfindung und Objekte |
+| `scenes/vorstadt.tscn` | Das Level «Vorstadt» – wird im Godot-Editor gebaut (siehe «Ein Level im Editor bauen») |
+| `scripts/level.gd` | Liest Karte und Objekte aus der Level-Szene, baut Kacheln, Kollision, Wegfindung; Vorschau im Editor |
+| `scripts/level_object.gd` | Editor-Knoten im Level: Tür, Wandkauf, Perk, Shop, Box, Kiste, Startpunkt … |
+| `art/karte.tres`, `art/karte.png` | Tileset zum Malen der Level-Karte (Wand, Fenster, Hecke, Bodenarten, Spawn) |
 | `scripts/game.gd` | Runden, Spawns, Punkte, Power-ups, Shop, Quest |
 | `scripts/player.gd`, `scripts/zombie.gd` | Spieler und Zombie (Szenen in `scenes/`) |
 | `scripts/interactable.gd` | Wandkauf, Shop, Box, Werkbank, Strom, Funkgerät, Perks |
@@ -124,9 +126,47 @@ Die Dateien liegen in `user://save_1.json` bis `save_3.json`, die Einstellungen 
   Mauern und Dach als Kachel-Ebene `Mauern_und_Dach`, Fenster, Türen, Automaten als einzelne Bilder.
   Szene öffnen, umbauen – das gilt für alle Exemplare.
 
+## Ein Level im Editor bauen
+
+`scenes/vorstadt.tscn` im Godot-Editor öffnen. Man sieht das Level so, wie es im Spiel aussieht.
+Die Szene hat zwei Teile unter `Level`:
+
+- **`Karte` malen** (TileMapLayer mit `art/karte.tres`): Knoten wählen, unten im TileMap-Fenster
+  eine Kachel anklicken und malen. Die Kacheln sind Kartentypen, nicht fertige Grafik:
+
+  | Kachel | Bedeutung |
+  |---|---|
+  | Wand (Backstein) | Mauer; Mauerkrone und Vorderseite setzt das Spiel selbst passend zusammen |
+  | Fenster | Zombie-Eingang mit Barrikade. Direkt dahinter (aussen) gehört ein Zombie-Spawn |
+  | Hecke / Wald | nicht begehbar, Bäume kommen von selbst dazu. Unbemalte Felder sind auch Hecke |
+  | Holzboden, Fliesen, Asphalt, Gras, Erde | begehbarer Boden |
+  | Landeplatz (gelbes H) | Ziel der Flucht; die Markierung wird mittig über alle Felder gelegt |
+  | Zombie-Spawn (roter Kopf) | hier tauchen Zombies auf; aktiv, sobald der Bereich am Fenster offen ist |
+  | Waldboden | begehbare Lücke in der Hecke |
+
+  Über der Karte zeigt der Editor eine Vorschau mit der echten Grafik; sie wird beim Malen sofort
+  neu gezeichnet. Spawns sind darin rot umrahmt. Wer die gemalten Kartentypen selbst sehen will,
+  wählt den Knoten `Level` und setzt im Inspektor **Karte zeigen**. Die Karte beginnt oben links
+  bei (0, 0); malt nicht in negative Koordinaten.
+- **`Objekte` hinstellen** (LevelObject-Knoten, nach Gruppen sortiert: Türen, Wandkäufe,
+  Automaten, Quest, Hindernisse): ein vorhandenes Objekt wählen, Ctrl+D, verschieben. Im Inspektor
+  bestimmt **Art**, was es ist; darunter erscheinen nur die passenden Felder:
+  - *Tür:* Name, Preis, Grösse in Kacheln (ab der Kachel des Punkts nach rechts/unten),
+    «bei Flucht offen» (geht auf, wenn der Helikopter kommt). Unter eine Tür gehört Boden.
+  - *Wandkauf:* Waffe. Gehört auf eine Wand-Kachel und ist nur von unten erreichbar.
+  - *Perk:* welcher Automat. *Kiste, Fass, Mülltonne, Baum:* Bild-Variante.
+  - *Startpunkt, Shop, Mystery-Box, Werkbank, Stromschalter, Funkgerät, Funkteil (3 Stück),
+    Glückspilz (3 Stück).*
+
+  Massgebend ist immer die Kachel, auf der der Punkt liegt; der Editor zeichnet das Objekt
+  eingerastet so, wie es im Spiel steht. Die Quest braucht Strom, Funkgerät, 3 Funkteile und einen
+  Landeplatz.
+- **Neues Level:** `vorstadt.tscn` im Dateisystem duplizieren, umbauen und in
+  `scripts/hub_data.gd` beim Ziel unter `scene` eintragen (z. B. `res://scenes/tankstelle.tscn`).
+
 ## Anpassen
 
-- **Karte:** `scripts/level_data.gd` bearbeiten, die Legende steht oben in der Datei.
+- **Level:** wird im Godot-Editor gebaut, siehe «Ein Level im Editor bauen».
 - **Balance:** Werte in `scripts/globals.gd` (Schaden, Preise, Zombies pro Runde).
 - **Dorf:** wird im Godot-Editor gebaut, siehe unten. Schrott-Formel, Preise der Startwaffen,
   Aufträge und Navi-Ziele in `scripts/hub_data.gd`. Ein neues Level wird dort als Ziel eingetragen

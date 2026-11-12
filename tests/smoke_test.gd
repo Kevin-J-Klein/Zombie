@@ -25,7 +25,7 @@ func new_game() -> void:
 		game.queue_free()
 		await get_tree().process_frame
 	get_tree().paused = false
-	game = load("res://scenes/game.tscn").instantiate()
+	game = load("res://scenes/vorstadt.tscn").instantiate()
 	add_child(game)
 	await wait(0.3)
 
@@ -54,6 +54,10 @@ func run() -> void:
 	var p: Player = game.player
 
 	check(level.size == Vector2i(60, 38), "Karte 60x38 geladen")
+	check(not level.has_node("Objekte_Editor") or level.get_node("Objekte_Editor").is_queued_for_deletion(),
+		"Editor-Objekte wurden in Spielobjekte umgewandelt")
+	check(level.objects.has("shop") and level.objects["smg"].size() == 1 and level.objects["part"].size() == 3
+		and level.player_start != Vector2.ZERO, "Shop, Wandkauf, Funkteile und Startpunkt aus der Szene")
 	check(level.spawns.size() == 13, "13 Zombie-Spawns (%d)" % level.spawns.size())
 	check(level.windows.size() == 13, "13 Fenster (%d)" % level.windows.size())
 	check(level.doors.size() == 5, "5 Tueren (%d)" % level.doors.size())
@@ -125,8 +129,8 @@ func run() -> void:
 
 	# --- Tueren
 	game.points = 500000
-	var expected := {"a": 7, "b": 8, "c": 9, "d": 11, "e": 13}
-	for id in ["a", "b", "c", "d", "e"]:
+	var expected := {"Haustür": 7, "Markt": 8, "Lagerraum": 9, "Gartentor": 11, "Garage": 13}
+	for id in ["Haustür", "Markt", "Lagerraum", "Gartentor", "Garage"]:
 		level.doors[id].interact(p)
 		await wait(0.05)
 		check(level.active_spawns.size() == expected[id], "Tuer %s offen -> %d aktive Spawns (%d)" % [id, expected[id], level.active_spawns.size()])
@@ -155,22 +159,22 @@ func run() -> void:
 	check(not game.menu_open and p.input_enabled, "Shop schliesst")
 
 	# --- Strom, Perks, Upgrade
-	level.objects["H"][0].interact(p)
+	level.objects["health"][0].interact(p)
 	check(not game.has_perk("health"), "Perk ohne Strom nicht kaufbar")
-	level.objects["V"][0].interact(p)
+	level.objects["revive"][0].interact(p)
 	check(game.has_perk("revive"), "Zweite Chance geht ohne Strom")
-	level.objects["E"][0].interact(p)
+	level.objects["power"][0].interact(p)
 	check(game.power_on, "Strom eingeschaltet")
-	for ch in ["H", "F", "R", "T"]:
+	for ch in ["health", "fire", "reload", "stamina"]:
 		level.objects[ch][0].interact(p)
 	check(game.perks.size() == 5 and p.max_hp == 250.0, "Alle 5 Perks gekauft, Stahlhaut wirkt")
 	for i in 4:
-		level.objects["U"][0].interact(p)
+		level.objects["upgrade"][0].interact(p)
 	check(p.weapon()["level"] == 3, "Waffe 3x aufgeruestet (%s)" % G.weapon_name(p.weapon()["id"], p.weapon()["level"]))
 	p.fire()
 
 	# --- Mystery-Box
-	var box: Interactable = level.objects["M"][0]
+	var box: Interactable = level.objects["box"][0]
 	box.interact(p)
 	check(box.box_state == Interactable.Box.ROLLING, "Mystery-Box dreht")
 	await wait(3.0)
@@ -199,7 +203,7 @@ func run() -> void:
 		p.global_position = part.global_position
 		await wait(0.15)
 	check(game.parts == 3, "Funkteile eingesammelt (%d/3)" % game.parts)
-	level.objects["K"][0].interact(p)
+	level.objects["radio"][0].interact(p)
 	check(game.radio_fixed and game.defend_t > 0.0, "Funkgeraet repariert, Verteidigung laeuft")
 	game.defend_t = 0.5
 	await wait(1.0)

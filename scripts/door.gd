@@ -1,8 +1,6 @@
 class_name Door
 extends Node2D
-## Kaufbare Tuer. Besteht aus einer oder mehreren Kacheln mit gleichem Buchstaben.
-
-const LevelData := preload("res://scripts/level_data.gd")
+## Kaufbare Tuer ueber eine oder mehrere Kacheln. Im Editor ein LevelObject der Art «Tür».
 
 var game: Node
 var level: Node
@@ -11,16 +9,17 @@ var cost := 0
 var title := ""
 var cells: Array[Vector2i] = []
 var reach := 30.0
+var opens_on_escape := false             # geht auf, wenn der Helikopter kommt
 
 
-func setup(p_game: Node, p_level: Node, p_id: String, p_cells: Array) -> void:
+func setup(p_game: Node, p_level: Node, p_title: String, p_cells: Array, p_cost: int, vertical: bool) -> void:
 	game = p_game
 	level = p_level
-	id = p_id
+	id = p_title
+	title = p_title
+	cost = p_cost
 	cells.assign(p_cells)
-	cost = LevelData.DOORS[id]["cost"]
-	title = LevelData.DOORS[id]["name"]
-	name = "Tuer_" + id
+	name = "Tuer_" + p_title
 	add_to_group("interact")
 	position = level.cell_center(cells[0])
 	var body := StaticBody2D.new()
@@ -28,11 +27,10 @@ func setup(p_game: Node, p_level: Node, p_id: String, p_cells: Array) -> void:
 	body.collision_mask = 0
 	add_child(body)
 	# Holztor aus dem Pack: liegt die Tuer in einer senkrechten Wand, die schmalen Bretter
-	var vertical := cells.size() > 1 and cells[0].x == cells[1].x
 	for c in cells:
 		var local: Vector2 = level.cell_center(c) - position
 		var s := Sprite2D.new()
-		s.texture = Pack.file("Objects/Buildable/Wooden/Wooden-wall_Vertical.png" if vertical else "Objects/Buildable/Wooden/Wooden-wall_Gate_Horizontal.png")
+		s.texture = Pack.file(LevelObject.TUER_SENKRECHT if vertical else LevelObject.TUER_WAAGRECHT)
 		s.position = local
 		add_child(s)
 		var shape := CollisionShape2D.new()

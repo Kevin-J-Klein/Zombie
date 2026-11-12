@@ -1,6 +1,8 @@
 extends Node2D
 ## Spielleitung: Runden, Zombie-Spawns, Punkte, Strom, Perks, Power-ups,
 ## Shop und die Quest (Easter Egg), mit der man das Level durchspielt.
+## Haengt an der Wurzel jeder Level-Szene (z. B. scenes/vorstadt.tscn); das Kind «Level» ist die
+## im Editor gebaute Karte (siehe level.gd).
 
 const PLAYER_SCENE := preload("res://scenes/player.tscn")
 const ZOMBIE_SCENE := preload("res://scenes/zombie.tscn")
@@ -45,9 +47,7 @@ var won := false
 
 func _ready() -> void:
 	randomize()
-	level = Level.new()
-	level.name = "Level"
-	add_child(level)
+	level = $Level
 	level.build(self)
 
 	player = PLAYER_SCENE.instantiate()
@@ -318,8 +318,9 @@ func fix_radio() -> void:
 func _open_extraction() -> void:
 	defend_t = 0.0
 	extraction_open = true
-	if level.doors.has("d"):
-		level.doors["d"].open()
+	for d: Door in level.doors.values().duplicate():
+		if d.opens_on_escape:
+			d.open()
 	announce("Der Helikopter ist da!", "Lauf zum Landeplatz im Garten")
 
 

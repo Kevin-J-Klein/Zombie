@@ -48,7 +48,7 @@ const CONTRACTS := {
 ##   pos     Lage auf der Navi-Karte (0-1)
 const START_DEST := "vorstadt"
 const DESTINATIONS := {
-	"vorstadt": {"name": "Vorstadt", "scene": "res://scenes/game.tscn", "skulls": 1, "bonus": 1.0, "areas": 5,
+	"vorstadt": {"name": "Vorstadt", "scene": "res://scenes/vorstadt.tscn", "skulls": 1, "bonus": 1.0, "areas": 5,
 		"mission": "Funkgerät reparieren und\nzum Landeplatz fliehen", "unlock": {}, "pos": Vector2(0.42, 0.26)},
 	"tankstelle": {"name": "Tankstelle", "scene": "", "skulls": 2, "bonus": 1.5, "areas": 4,
 		"mission": "Noch im Bau", "unlock": {"dest": "vorstadt", "escapes": 1}, "pos": Vector2(0.76, 0.46)},
