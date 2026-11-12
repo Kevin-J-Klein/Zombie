@@ -4,13 +4,12 @@ extends CanvasLayer
 ## Haus, Shop, Auftragsbrett, Navi und Einstellungen. Wird komplett im Code aufgebaut,
 ## im selben Stil wie die Menues im Level (hud.gd).
 
-const Data := preload("res://scripts/village_data.gd")
 const TEXT := Color("#efe3c8")
 const MUTED := Color("#b9ab9c")
 const GOLD := Color("#f2c230")
 const GREEN := Color("#8fd88a")
 const ORANGE := Color("#e88040")
-const SCRAP_TEX := preload("res://art/pack/ui/scrap.png")
+
 
 var village: Node
 var root: Control
@@ -113,7 +112,7 @@ func _spacer() -> Control:
 ## Schrott-Betrag mit Symbol
 func _scrap(amount: int, font_size := 20, color := TEXT) -> HBoxContainer:
 	var h := _hbox(6)
-	h.add_child(_icon(SCRAP_TEX, 30, 24))
+	h.add_child(_icon(Pack.tex("ui/scrap"), 30, 24))
 	h.add_child(_label(HubData.num(amount), font_size, color))
 	return h
 
@@ -156,10 +155,10 @@ func _bar(value: float, max_value: float, fill: Color, w := 150.0) -> ProgressBa
 
 func _build_hud() -> void:
 	var p := PanelContainer.new()
-	p.add_theme_stylebox_override("panel", G.tex_style("res://art/pack/ui/panel.png", 18.0, 14.0))
+	p.add_theme_stylebox_override("panel", G.tex_style("panel", 18.0, 14.0))
 	_place(p, 0, 0, 16, 16, 190, 56)
 	var h := _hbox(10)
-	h.add_child(_icon(SCRAP_TEX, 38, 30))
+	h.add_child(_icon(Pack.tex("ui/scrap"), 38, 30))
 	scrap_label = _label("0", 26)
 	scrap_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scrap_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -178,7 +177,7 @@ func _build_hud() -> void:
 	root.add_child(title)
 
 	var gear := Button.new()
-	gear.icon = preload("res://art/pack/ui/gear.png")
+	gear.icon = Pack.tex("ui/gear")
 	gear.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	gear.tooltip_text = "Einstellungen (Esc)"
 	gear.focus_mode = Control.FOCUS_NONE
@@ -202,7 +201,7 @@ func _build_hud() -> void:
 ## Namensschilder schweben ueber den Orten und folgen der Kamera.
 ## Das Schild des Auftragsbretts bekommt ein "!", wenn es dort etwas Neues gibt.
 func _build_tags() -> void:
-	for t: Dictionary in Data.TAGS:
+	for t: Dictionary in village.tags:
 		var p := PanelContainer.new()
 		var sb := StyleBoxFlat.new()
 		sb.bg_color = Color(0.12, 0.08, 0.14, 0.8)
@@ -363,7 +362,7 @@ func _build_house() -> void:
 	gap.custom_minimum_size = Vector2(0, 10)
 	left.add_child(gap)
 	left.add_child(_label("EASTER EGGS", 14, GOLD))
-	for egg in [["gnomes", "Alle Gartenzwerge erwischt"], ["escape", "Mit dem Helikopter geflohen"]]:
+	for egg in [["gnomes", "Alle Glückspilze erwischt"], ["escape", "Mit dem Helikopter geflohen"]]:
 		var found: bool = d["eggs"][egg[0]]
 		left.add_child(_label(("✔  " + egg[1]) if found else "?  ? ? ?", 18, GREEN if found else MUTED))
 
@@ -548,7 +547,7 @@ func _build_navi() -> void:
 	info.add_child(_label("Schwierigkeit", 14, MUTED))
 	var skulls := _hbox(4)
 	for i in 4:
-		skulls.add_child(_icon(load("res://art/pack/ui/skull.png" if i < int(dest["skulls"]) else "res://art/pack/ui/skull_off.png"), 21, 21))
+		skulls.add_child(_icon(Pack.tex("ui/skull" if i < int(dest["skulls"]) else "ui/skull_off"), 21, 21))
 	info.add_child(skulls)
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 6)

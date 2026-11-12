@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://art/asset_pack/Objects/Windows/Window_21_open_Boarded-up.png" id="1_tex"]
+
+[node name="window_21_open_boarded_up" type="Node2D"]
+
+[node name="Sprite" type="Sprite2D" parent="."]
+texture = ExtResource("1_tex")
+centered = false
+offset = Vector2(-8, -14)

@@ -311,11 +311,17 @@ func run_village() -> void:
 	var village: Node = load("res://scenes/village.tscn").instantiate()
 	add_child(village)
 	await wait(0.3)
-	var VData := preload("res://scripts/village_data.gd")
 	check(village.size == Vector2i(36, 24), "Dorf-Karte 36x24 geladen")
-	check(village.player.position == VData.START_AFTER_RUN and not Save.back_from_run, "Spieler startet nach der Partie beim Wagen")
+	check(village.spots.size() == 4 and village.tags.size() == 4 and village.zombies.size() == 6,
+		"Dorf-Szene: 4 Orte, 4 Schilder, 6 Kulissen-Zombies")
+	check(village.entities.has_node("Haus") and village.entities.has_node("Laden") and village.floor_map.tile_set.get_terrains_count(0) == 3,
+		"Haus und Laden stehen im Dorf, Boden-Tileset hat 3 Terrains")
+	var kanten: TileMapLayer = village.get_node_or_null("Kanten")
+	check(kanten != null and kanten.get_used_cells().size() > 0 and kanten.tile_set == village.floor_map.tile_set,
+		"Bordsteine liegen auf der Ebene Kanten (gleiches Tileset wie der Boden)")
+	check(village.player.position == village.start_after_run and not Save.back_from_run, "Spieler startet nach der Partie beim Wagen")
 	check(village.ui.alert_label.visible, "Ausrufezeichen ueber dem Auftragsbrett")
-	for it: Dictionary in VData.INTERACT:
+	for it: Dictionary in village.spots:
 		village.player.global_position = it["pos"]
 		await wait(0.1)
 		check(village.nearest.get("kind", "") == it["kind"] and village.ui.prompt_label.text == it["prompt"], "Hinweis bei %s: %s" % [it["kind"], it["prompt"]])
@@ -340,7 +346,7 @@ func run_village() -> void:
 	# Spieler kommt zu Fuss vom Platz durchs Tor zum Wagen (keine unsichtbare Wand im Weg)
 	var space: PhysicsDirectSpaceState2D = village.get_world_2d().direct_space_state
 	var blocked := 0
-	var stops: Array[Vector2] = [VData.START, Vector2(288, 280), Vector2(288, 352), VData.START_AFTER_RUN,
+	var stops: Array[Vector2] = [village.start, Vector2(288, 280), Vector2(288, 352), village.start_after_run,
 		Vector2(104, 180), Vector2(104, 216), Vector2(200, 216), Vector2(480, 216), Vector2(480, 184)]
 	for pt in stops:
 		var q := PhysicsPointQueryParameters2D.new()
@@ -351,6 +357,36 @@ func run_village() -> void:
 	check(blocked == 0, "Wege im Dorf sind frei (%d von %d Punkten blockiert)" % [blocked, stops.size()])
 	village.queue_free()
 	await get_tree().process_frame
+
+	# --- Objekt-Bibliothek: jede Szene laedt und hat ein Bild
+	var broken: Array[String] = []
+	var total := 0
+	for path in _scenes_in("res://scenes/props"):
+		total += 1
+		var inst: Node = load(path).instantiate()
+		# Bild = Sprite mit Textur, Animation oder bemalte Kachel-Ebene (Haus, Laden); kein Sprite ohne Bild
+		var shows := false
+		for n in inst.find_children("*", "", true, false):
+			if n is Sprite2D and n.texture == null:
+				shows = false
+				break
+			if n is Sprite2D or (n is AnimatedSprite2D and n.sprite_frames != null) \
+					or (n is TileMapLayer and not n.get_used_cells().is_empty()):
+				shows = true
+		if not shows:
+			broken.append(path)
+		inst.free()
+	check(total > 300 and broken.is_empty(), "Objekt-Bibliothek: %d Szenen laden (%s)" % [total, ", ".join(broken) if broken else "alle mit Bild"])
+
+
+func _scenes_in(dir: String) -> Array[String]:
+	var out: Array[String] = []
+	for f in DirAccess.get_files_at(dir):
+		if f.ends_with(".tscn"):
+			out.append(dir + "/" + f)
+	for d in DirAccess.get_directories_at(dir):
+		out.append_array(_scenes_in(dir + "/" + d))
+	return out
 
 
 # ------------------------------------------------------------------ Speicherplaetze und Startbildschirm

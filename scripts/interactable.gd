@@ -10,7 +10,6 @@ var weapon_id := ""
 var perk_id := ""
 var reach := 27.0
 var sprite: Sprite2D
-var lever: Sprite2D
 
 # Mystery-Box
 enum Box { READY, ROLLING, OFFER }
@@ -33,10 +32,6 @@ func setup(p_game: Node, p_kind: String, tex: Texture2D, tint := Color.WHITE) ->
 	add_child(sprite)
 	if kind == "wallbuy":
 		sprite.position = Vector2.ZERO
-	elif kind == "power":
-		lever = Sprite2D.new()
-		lever.texture = preload("res://art/switch_off.png")
-		sprite.add_child(lever)
 	set_process(kind == "box")
 
 
@@ -122,7 +117,7 @@ func interact(player: Node) -> void:
 				game.announce("%s aufgerüstet!" % G.weapon_name(cur["id"], cur["level"]))
 		"power":
 			if not game.power_on:
-				lever.texture = preload("res://art/switch_on.png")
+				sprite.modulate = Color(1.3, 1.25, 0.85)   # Stromkasten leuchtet, sobald der Strom an ist
 				game.set_power()
 		"radio":
 			if not game.radio_fixed and game.parts >= 3 and game.power_on:

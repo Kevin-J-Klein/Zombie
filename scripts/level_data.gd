@@ -8,7 +8,7 @@ extends RefCounted
 ##   a-e  kaufbare Tueren (Preise in DOORS)     P  Startpunkt Spieler
 ##   1-4  Wandkauf (Waffe in WALLBUYS)          A  Shop-Terminal     M  Mystery-Box
 ##   U  Upgrade-Werkbank   E  Stromschalter     K  Funkgeraet        x y z  Funkteile
-##   V H F R T  Perk-Automaten (siehe PERK_CHARS)                    o  Gartenzwerg
+##   V H F R T  Perk-Automaten (siehe PERK_CHARS)                    o  Glückspilz
 ##   B  Kiste   O  Fass   C  Container   Y  Baum
 
 const MAP: Array[String] = [

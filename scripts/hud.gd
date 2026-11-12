@@ -123,9 +123,9 @@ func _bar(fill: Color, w: float, h: float) -> ProgressBar:
 ## Alle Grafiken sind 3x vergroessert; die Fuellung sitzt bei (fx, fy) Pack-Pixeln.
 func _tex_bar(name: String, fill: String, fx: int, fy: int) -> TextureProgressBar:
 	var b := TextureProgressBar.new()
-	b.texture_under = load("res://art/pack/ui/%s_under.png" % name)
-	b.texture_over = load("res://art/pack/ui/%s_over.png" % name)
-	b.texture_progress = load("res://art/pack/ui/%s.png" % fill)
+	b.texture_under = Pack.tex("ui/%s_under" % name)
+	b.texture_over = Pack.tex("ui/%s_over" % name)
+	b.texture_progress = Pack.tex("ui/" + fill)
 	b.texture_progress_offset = Vector2(fx, fy) * 3.0
 	b.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	b.max_value = 100.0
@@ -165,7 +165,7 @@ func _build_points_and_objective() -> void:
 	root.add_child(box)
 
 	var p := PanelContainer.new()
-	p.add_theme_stylebox_override("panel", G.tex_style("res://art/pack/ui/panel.png", 18.0, 14.0))
+	p.add_theme_stylebox_override("panel", G.tex_style("panel", 18.0, 14.0))
 	p.size_flags_horizontal = Control.SIZE_SHRINK_END
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 10)
@@ -416,7 +416,7 @@ func _process(delta: float) -> void:
 		else:
 			var pi := i - 2
 			if pi < game.perks.size():
-				icon.texture = preload("res://art/perk_icon.png")
+				icon.texture = Pack.file("Objects/Pickable/Canned-soup.png")
 				icon.modulate = G.PERKS[game.perks[pi]]["color"]
 			else:
 				icon.texture = null

@@ -1,6 +1,7 @@
 class_name Gnome
 extends Node2D
-## Versteckter Gartenzwerg (Neben-Easter-Egg): alle drei abschiessen gibt eine Belohnung.
+## Versteckter Glueckspilz (Neben-Easter-Egg, frueher ein Gartenzwerg): alle drei abschiessen
+## gibt eine Belohnung. Im Code heisst er weiter "gnome" (Spielstaende bleiben gueltig).
 
 var game: Node
 
@@ -8,8 +9,8 @@ var game: Node
 func setup(p_game: Node) -> void:
 	game = p_game
 	var s := Sprite2D.new()
-	s.texture = preload("res://art/gnome.png")
-	s.position = Vector2(0, -3)
+	s.texture = Pack.file("Objects/Nature/Flowers_Mashrooms_Other-nature-stuff/Mushroom.png")
+	s.position = Vector2(0, -2)
 	add_child(s)
 	var area := Area2D.new()
 	area.collision_layer = G.L_HURT
@@ -18,7 +19,7 @@ func setup(p_game: Node) -> void:
 	area.add_to_group("hurtbox")
 	var shape := CollisionShape2D.new()
 	var r := RectangleShape2D.new()
-	r.size = Vector2(9, 12)
+	r.size = Vector2(9, 10)
 	shape.shape = r
 	shape.position = Vector2(0, -2)
 	area.add_child(shape)

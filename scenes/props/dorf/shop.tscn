@@ -1,0 +1,68 @@
+[gd_scene format=4]
+
+[ext_resource type="TileSet" path="res://art/kacheln.tres" id="1_i8f57"]
+[ext_resource type="Texture2D" path="res://art/asset_pack/Objects/Buildings/HVAC.png" id="2_hyisq"]
+[ext_resource type="Texture2D" path="res://art/asset_pack/Objects/Buildings/Antenna_1.png" id="3_x02yw"]
+[ext_resource type="Texture2D" path="res://art/asset_pack/Objects/Windows/Window_15_Beige.png" id="4_cf7jp"]
+[ext_resource type="Texture2D" path="res://art/asset_pack/Objects/Windows/Window_16_Beige.png" id="5_6snry"]
+[ext_resource type="Texture2D" path="res://art/asset_pack/Objects/Buildings/Enterance_Green.png" id="6_2ffb8"]
+[ext_resource type="Texture2D" path="res://art/asset_pack/Objects/Buildings/Awning_orange_3.png" id="7_fynho"]
+[ext_resource type="Texture2D" path="res://art/asset_pack/Objects/Vending-machine_Blue.png" id="8_ipjs0"]
+[ext_resource type="Texture2D" path="res://art/asset_pack/Objects/Vending-machine_Red.png" id="9_588ej"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_dq525"]
+size = Vector2(140, 94)
+
+[node name="shop" type="Node2D" unique_id=1617556904]
+
+[node name="Mauern_und_Dach" type="TileMapLayer" parent="." unique_id=479499808]
+position = Vector2(-72, -96)
+tile_map_data = PackedByteArray("AAAAAAAABgAFAAAAAAABAAAABgAGAAAAAAACAAAABgAGAAAAAAADAAAABgAGAAAAAAAEAAAABgAGAAAAAAAFAAAABgAGAAAAAAAGAAAABgAGAAAAAAAHAAAABgAGAAAAAAAIAAAABgAIAAAAAAAAAAEABgAFAAEAAAABAAEABgAGAAEAAAACAAEABgAGAAEAAAADAAEABgAGAAEAAAAEAAEABgAGAAEAAAAFAAEABgAGAAEAAAAGAAEABgAGAAEAAAAHAAEABgAGAAEAAAAIAAEABgAIAAEAAAAAAAIABgAFAAIAAAABAAIABgAGAAIAAAACAAIABgAGAAIAAAADAAIABgAGAAIAAAAEAAIABgAGAAIAAAAFAAIABgAGAAIAAAAGAAIABgAGAAIAAAAHAAIABgAGAAIAAAAIAAIABgAIAAIAAAAAAAMABgAEAAMAAAABAAMABgAGAAMAAAACAAMABgAIAAMAAAADAAMABgAFAAMAAAAEAAMABgAGAAMAAAAFAAMABgAIAAMAAAAGAAMABgAFAAMAAAAHAAMABgAGAAMAAAAIAAMABgAJAAMAAAAAAAQABgAEAAQAAAABAAQABgAGAAQAAAACAAQABgAIAAQAAAADAAQABgAFAAQAAAAEAAQABgAGAAQAAAAFAAQABgAIAAQAAAAGAAQABgAFAAQAAAAHAAQABgAGAAQAAAAIAAQABgAJAAQAAAAAAAUABgAEAAUAAAABAAUABgAGAAUAAAACAAUABgAIAAUAAAADAAUABgAFAAUAAAAEAAUABgAGAAUAAAAFAAUABgAIAAUAAAAGAAUABgAFAAUAAAAHAAUABgAGAAUAAAAIAAUABgAJAAUAAAA=")
+tile_set = ExtResource("1_i8f57")
+
+[node name="Klimaanlage" type="Sprite2D" parent="." unique_id=574249046]
+position = Vector2(-56, -86)
+texture = ExtResource("2_hyisq")
+centered = false
+
+[node name="Antenne" type="Sprite2D" parent="." unique_id=870283925]
+position = Vector2(28, -92)
+texture = ExtResource("3_x02yw")
+centered = false
+
+[node name="Fenster_links" type="Sprite2D" parent="." unique_id=1138237447]
+position = Vector2(-58, -30)
+texture = ExtResource("4_cf7jp")
+centered = false
+
+[node name="Fenster_rechts" type="Sprite2D" parent="." unique_id=501843293]
+position = Vector2(44, -30)
+texture = ExtResource("5_6snry")
+centered = false
+
+[node name="Eingang" type="Sprite2D" parent="." unique_id=439417753]
+position = Vector2(-15, -27)
+texture = ExtResource("6_2ffb8")
+centered = false
+
+[node name="Markise" type="Sprite2D" parent="." unique_id=983956065]
+position = Vector2(-32, -46)
+texture = ExtResource("7_fynho")
+centered = false
+
+[node name="Automat_blau" type="Sprite2D" parent="." unique_id=1101160068]
+position = Vector2(-42, -22)
+texture = ExtResource("8_ipjs0")
+centered = false
+
+[node name="Automat_rot" type="Sprite2D" parent="." unique_id=342437440]
+position = Vector2(26, -22)
+texture = ExtResource("9_588ej")
+centered = false
+
+[node name="Solid" type="StaticBody2D" parent="." unique_id=501063736]
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Solid" unique_id=1548626950]
+position = Vector2(0, -47)
+shape = SubResource("RectangleShape2D_dq525")

@@ -32,7 +32,7 @@ func setup(p_game: Node, p_level: Node, p_id: String, p_cells: Array) -> void:
 	for c in cells:
 		var local: Vector2 = level.cell_center(c) - position
 		var s := Sprite2D.new()
-		s.texture = preload("res://art/pack/props/door_v.png") if vertical else preload("res://art/pack/props/door_h.png")
+		s.texture = Pack.file("Objects/Buildable/Wooden/Wooden-wall_Vertical.png" if vertical else "Objects/Buildable/Wooden/Wooden-wall_Gate_Horizontal.png")
 		s.position = local
 		add_child(s)
 		var shape := CollisionShape2D.new()

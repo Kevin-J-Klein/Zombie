@@ -4,9 +4,8 @@ extends Node2D
 ## Wegfindung fuer Zombies und alle Objekte (Tueren, Fenster, Automaten ...).
 
 const LevelData := preload("res://scripts/level_data.gd")
-## Grafiken kommen aus dem Asset-Pack (tools/import_asset_pack.py -> art/pack/)
-const TILES_TEX := preload("res://art/pack/tiles.png")
-const WALLS_TEX := preload("res://art/pack/walls.png")
+## Grafiken kommen direkt aus dem Asset-Pack (siehe pack.gd): Boden- und Wand-Atlas setzt
+## Pack.tex("tiles") / Pack.tex("walls") aus den Pack-Tilesets zusammen.
 
 const SRC_FLOOR := 0
 const SRC_WALL := 1          # Spalte = Nachbarmaske (N=1, O=2, S=4, W=8)
@@ -16,15 +15,16 @@ const WALL_WINDOW := 2
 const T_HEDGE := 7
 const T_WOODS_GROUND := 8    # Waldboden ohne Buesch (Spawns, Luecken in der Hecke)
 const FLOOR_TILES := {".": 0, ",": 1, ":": 2, "~": 3, ";": 4, "X": 9}
-## Kartenzeichen -> Varianten (eine wird pro Zelle fest ausgewuerfelt)
+## Kartenzeichen -> Varianten aus dem Pack (eine wird pro Zelle fest ausgewuerfelt)
 const SOLID_PROPS := {
-	"B": ["res://art/pack/props/crate_0.png", "res://art/pack/props/crate_1.png", "res://art/pack/props/crate_2.png"],
-	"O": ["res://art/pack/props/barrel_0.png", "res://art/pack/props/barrel_1.png", "res://art/pack/props/barrel_2.png"],
-	"C": ["res://art/pack/props/container_0.png", "res://art/pack/props/container_1.png"],
-	"Y": ["res://art/pack/props/tree_0.png", "res://art/pack/props/tree_1.png"],
+	"B": ["Objects/Cardboard_1.png", "Objects/Cardboard_2.png", "Objects/Pallet_1.png"],
+	"O": ["Objects/Barrel_rust_red_1.png", "Objects/Barrel_blue_1.png", "Objects/Barrel_rust_blue_1.png"],
+	"C": ["Objects/Garbage-Bin_4.png", "Objects/Trash-can_1.png"],
+	"Y": ["Objects/Nature/Green/Tree_3_Normal_Green.png", "Objects/Nature/Green/Tree_10_Small-oak_Green.png"],
 }
-const WOODS_TREES := ["res://art/pack/props/woods_tree_0.png", "res://art/pack/props/woods_tree_1.png",
-	"res://art/pack/props/woods_tree_2.png", "res://art/pack/props/woods_tree_3.png"]
+const WOODS_TREES := ["Objects/Nature/Dark-Green/Tree_1_Spruce_Dark-Green.png",
+	"Objects/Nature/Dark-Green/Tree_3_Normal_Dark-Green.png", "Objects/Nature/Dark-Green/Tree_8_Birch_Dark-Green.png",
+	"Objects/Nature/Dark-Green/Tree_2_Spruce-Sparse_Dark-Green.png"]
 
 var game: Node
 var grid: Array[String] = []
@@ -135,7 +135,7 @@ func _make_tileset() -> TileSet:
 
 	# Boden: 10 Typen x 4 Varianten, nur die Hecke ist fest
 	var floor_src := TileSetAtlasSource.new()
-	floor_src.texture = TILES_TEX
+	floor_src.texture = Pack.tex("tiles")
 	floor_src.texture_region_size = Vector2i(G.TILE, G.TILE)
 	ts.add_source(floor_src, SRC_FLOOR)
 	for tx in 10:
@@ -148,7 +148,7 @@ func _make_tileset() -> TileSet:
 	# Waende: 16 Nachbarmasken x (oben, Vorderseite, Fenster). Fenster haben keine
 	# Kollision - dort sperrt die Barrikade nur den Spieler.
 	var wall_src := TileSetAtlasSource.new()
-	wall_src.texture = WALLS_TEX
+	wall_src.texture = Pack.tex("walls")
 	wall_src.texture_region_size = Vector2i(G.TILE, G.TILE)
 	ts.add_source(wall_src, SRC_WALL)
 	for m in 16:
@@ -196,7 +196,7 @@ func _maybe_add_tree(x: int, y: int) -> void:
 			return
 	# Knoten steht am Stamm (fuer die Sortierung nach y), das Bild ragt nach oben
 	var s := Sprite2D.new()
-	s.texture = load(WOODS_TREES[posmod(x * 5 + y * 3, WOODS_TREES.size())])
+	s.texture = Pack.file(WOODS_TREES[posmod(x * 5 + y * 3, WOODS_TREES.size())])
 	s.position = cell_center(Vector2i(x, y)) + Vector2(posmod(x * 3 + y, 5) - 2, 7.0)
 	s.offset = Vector2(0, -s.texture.get_height() * 0.5)
 	entities.add_child(s)
@@ -210,7 +210,7 @@ func _add_helipad() -> void:
 	for c: Vector2i in extraction_cells:
 		r = r.expand(c).expand(c + Vector2i.ONE)
 	var s := Sprite2D.new()
-	s.texture = preload("res://art/pack/props/helipad.png")
+	s.texture = Pack.tex("props/helipad")
 	s.position = Vector2(r.position + r.end) * 0.5 * G.TILE
 	floor_map.add_child(s)
 
@@ -267,10 +267,9 @@ func _add_wallbuy(cell: Vector2i, weapon_id: String) -> void:
 	it.setup(game, "wallbuy", G.weapon_icon(weapon_id))
 	it.weapon_id = weapon_id
 	it.sprite.position = Vector2(0, -1)
-	var plate := Sprite2D.new()
-	plate.texture = preload("res://art/white.png")
-	plate.scale = Vector2(15, 9)
-	plate.modulate = Color(0.1, 0.08, 0.06, 0.55)
+	var plate := Polygon2D.new()
+	plate.polygon = PackedVector2Array([Vector2(-7.5, -4.5), Vector2(7.5, -4.5), Vector2(7.5, 4.5), Vector2(-7.5, 4.5)])
+	plate.color = Color(0.1, 0.08, 0.06, 0.55)
 	plate.show_behind_parent = true
 	it.sprite.add_child(plate)
 	# Wandkaeufe liegen auf der Wand und duerfen nie von Figuren verdeckt wirken -> eigene Ebene unter den Objekten
@@ -285,7 +284,7 @@ func _add_object(ch: String, cell: Vector2i) -> void:
 		n.position = pos
 		var s := Sprite2D.new()
 		var variants: Array = SOLID_PROPS[ch]
-		s.texture = load(variants[posmod(cell.x * 31 + cell.y * 17, variants.size())])
+		s.texture = Pack.file(variants[posmod(cell.x * 31 + cell.y * 17, variants.size())])
 		s.position = Vector2(0, 8.0 - s.texture.get_height() * 0.5)
 		n.add_child(s)
 		if ch == "Y":
@@ -315,21 +314,21 @@ func _add_object(ch: String, cell: Vector2i) -> void:
 	it.position = pos
 	match ch:
 		"A":
-			it.setup(game, "shop", preload("res://art/pack/props/shop.png"))
+			it.setup(game, "shop", Pack.tex("props/shop"))
 		"M":
-			it.setup(game, "box", preload("res://art/pack/props/box.png"))
+			it.setup(game, "box", Pack.file("UI/Inventory/Objects/Icon_Bullet-crate_Green.png"))
 		"U":
-			it.setup(game, "upgrade", preload("res://art/pack/props/upgrade.png"))
+			it.setup(game, "upgrade", Pack.file("Objects/Washing-machine.png"))
 		"E":
-			# Kein passender Schalter im Pack -> Platzhalter
-			it.setup(game, "power", preload("res://art/switch_base.png"))
+			# Stromschalter: Metalltuer (Stromkasten), leuchtet bei Strom
+			it.setup(game, "power", Pack.file("Objects/Buildings/Door_4_Metal.png"))
 		"K":
-			it.setup(game, "radio", preload("res://art/pack/props/radio.png"))
+			it.setup(game, "radio", Pack.file("Objects/Buildings/Antenna_1.png"))
 		_:
 			if LevelData.PERK_CHARS.has(ch):
 				var perk: String = LevelData.PERK_CHARS[ch]
 				# Perk-Automaten sind schon in der Perk-Farbe eingefaerbt
-				it.setup(game, "perk", load("res://art/pack/props/perk_%s.png" % perk))
+				it.setup(game, "perk", Pack.tex("props/perk_" + perk))
 				it.perk_id = perk
 			else:
 				push_warning("Unbekanntes Kartenzeichen '%s' bei %s" % [ch, cell])

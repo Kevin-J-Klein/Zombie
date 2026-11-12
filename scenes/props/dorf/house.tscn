@@ -1,0 +1,44 @@
+[gd_scene format=4]
+
+[ext_resource type="TileSet" path="res://art/kacheln.tres" id="1_tfnxq"]
+[ext_resource type="Texture2D" path="res://art/asset_pack/Objects/Windows/Window_3_wood.png" id="2_oa8ws"]
+[ext_resource type="Texture2D" path="res://art/asset_pack/Objects/Windows/Window_4_wood.png" id="3_6l8u5"]
+[ext_resource type="Texture2D" path="res://art/asset_pack/Objects/Buildings/Door_1_Beige.png" id="4_wqs50"]
+[ext_resource type="Texture2D" path="res://art/asset_pack/Objects/Buildings/Air-vent_1.png" id="5_0kcv1"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_0n0dx"]
+size = Vector2(108, 120)
+
+[node name="house" type="Node2D" unique_id=884400093]
+
+[node name="Mauern_und_Dach" type="TileMapLayer" parent="." unique_id=770226437]
+position = Vector2(-56, -122)
+tile_map_data = PackedByteArray("AAAAAAAABQAIAAAAAAABAAAABQAJAAAAAAACAAAABQAJAAAAAAADAAAABQAJAAAAAAAEAAAABQAJAAAAAAAFAAAABQAJAAAAAAAGAAAABQAKAAAAAAAAAAEABQAIAAEAAAABAAEABQAJAAEAAAACAAEABQAJAAEAAAADAAEABQAJAAEAAAAEAAEABQAJAAEAAAAFAAEABQAJAAEAAAAGAAEABQAKAAEAAAAAAAIABQAIAAIAAAABAAIABQAJAAIAAAACAAIABQAJAAIAAAADAAIABQAJAAIAAAAEAAIABQAJAAIAAAAFAAIABQAJAAIAAAAGAAIABQAKAAIAAAAAAAMABQAIAAMAAAABAAMABQAJAAMAAAACAAMABQAJAAMAAAADAAMABQAJAAMAAAAEAAMABQAJAAMAAAAFAAMABQAJAAMAAAAGAAMABQAKAAMAAAAAAAQABQAIAAQAAAABAAQABQAJAAQAAAACAAQABQAJAAQAAAADAAQABQAJAAQAAAAEAAQABQAJAAQAAAAFAAQABQAJAAQAAAAGAAQABQAKAAQAAAAAAAUABwAEAAMAAAABAAUABwAGAAMAAAACAAUABwAIAAMAAAADAAUABwAFAAMAAAAEAAUABwAGAAMAAAAFAAUABwAIAAMAAAAGAAUABwAJAAMAAAAAAAYABwAEAAQAAAABAAYABwAGAAQAAAACAAYABwAIAAQAAAADAAYABwAFAAQAAAAEAAYABwAGAAQAAAAFAAYABwAIAAQAAAAGAAYABwAJAAQAAAAAAAcABwAEAAUAAAABAAcABwAGAAUAAAACAAcABwAIAAUAAAADAAcABwAFAAUAAAAEAAcABwAGAAUAAAAFAAcABwAIAAUAAAAGAAcABwAJAAUAAAA=")
+tile_set = ExtResource("1_tfnxq")
+
+[node name="Fenster_links" type="Sprite2D" parent="." unique_id=1857878587]
+position = Vector2(-42, -25)
+texture = ExtResource("2_oa8ws")
+centered = false
+
+[node name="Fenster_rechts" type="Sprite2D" parent="." unique_id=353640758]
+position = Vector2(28, -25)
+texture = ExtResource("3_6l8u5")
+centered = false
+
+[node name="Tuer" type="Sprite2D" parent="." unique_id=2063512916]
+position = Vector2(-8, -25)
+texture = ExtResource("4_wqs50")
+centered = false
+
+[node name="Lueftung" type="Sprite2D" parent="." unique_id=1116118733]
+position = Vector2(24, -108)
+texture = ExtResource("5_0kcv1")
+centered = false
+
+[node name="Solid" type="StaticBody2D" parent="." unique_id=1190577447]
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Solid" unique_id=116468306]
+position = Vector2(0, -60)
+shape = SubResource("RectangleShape2D_0n0dx")

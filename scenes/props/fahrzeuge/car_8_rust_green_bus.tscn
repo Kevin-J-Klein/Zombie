@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://art/asset_pack/Objects/Vehicles/Rust/Car_8_Rust_Bus/Car_8_Rust_Green_Bus.png" id="1_tex"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_solid"]
+size = Vector2(55, 17)
+
+[node name="car_8_rust_green_bus" type="Node2D"]
+
+[node name="Sprite" type="Sprite2D" parent="."]
+texture = ExtResource("1_tex")
+centered = false
+offset = Vector2(-30, -31)
+
+[node name="Solid" type="StaticBody2D" parent="."]
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Solid"]
+position = Vector2(0, -8.5)
+shape = SubResource("RectangleShape2D_solid")

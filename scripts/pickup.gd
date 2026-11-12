@@ -10,7 +10,7 @@ var sprite: Sprite2D
 func setup(p_game: Node) -> void:
 	game = p_game
 	sprite = Sprite2D.new()
-	sprite.texture = preload("res://art/part.png")
+	sprite.texture = Pack.file("Objects/Buildings/Antenna_2.png")
 	add_child(sprite)
 
 

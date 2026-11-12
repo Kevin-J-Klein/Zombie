@@ -2,4 +2,8 @@
 *.translation
 export_presets.cfg
 .DS_Store
-/art/asset_pack
+# Asset-Pack nur lokal (darf nicht oeffentlich verteilt werden).
+# Die .import-Dateien kommen mit, damit alle dieselben Godot-IDs (uid://) haben.
+/art/asset_pack/**
+!/art/asset_pack/**/
+!/art/asset_pack/**/*.import

@@ -38,7 +38,7 @@ const CONTRACTS := {
 	"round_8_no_revive": {"name": "Ohne Netz", "text": "Runde 8 erreichen ohne «Zweite Chance»", "kind": "round_no_revive", "target": 8, "reward": 250, "run": true},
 	"points_8000": {"name": "Punktejäger", "text": "8000 Punkte in einer Partie verdienen", "kind": "points", "target": 8000, "reward": 180, "run": true},
 	"escape": {"name": "Funker", "text": "Das Funkgerät reparieren und fliehen", "kind": "escape", "target": 1, "reward": 300, "run": true},
-	"gnomes": {"name": "Zwergenjagd", "text": "Alle 3 Gartenzwerge in einer Partie erwischen", "kind": "gnomes", "target": 3, "reward": 150, "run": true},
+	"gnomes": {"name": "Pilzjagd", "text": "Alle 3 Glückspilze in einer Partie erwischen", "kind": "gnomes", "target": 3, "reward": 150, "run": true},
 }
 
 ## Ziele im Navi. Jedes Ziel ist ein Level mit festem Schwierigkeitsgrad (skulls 1-4).

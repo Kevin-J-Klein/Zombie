@@ -59,10 +59,10 @@ const PERKS := {
 }
 
 const POWERUPS := {
-	"max_ammo": {"name": "Max. Munition", "tex": "res://art/pack/props/pu_max_ammo.png"},
-	"insta_kill": {"name": "Sofort-Kill", "tex": "res://art/pu_insta_kill.png"},
-	"double_points": {"name": "Doppelte Punkte", "tex": "res://art/pu_double_points.png"},
-	"nuke": {"name": "Bombe", "tex": "res://art/pu_nuke.png"},
+	"max_ammo": {"name": "Max. Munition", "tex": "Objects/Pickable/Ammo-crate_Green.png"},
+	"insta_kill": {"name": "Sofort-Kill", "tex": "Objects/Pickable/Bat.png"},
+	"double_points": {"name": "Doppelte Punkte", "tex": "Objects/Chips-pack_Red.png"},
+	"nuke": {"name": "Bombe", "tex": "Objects/Barrel_red_1.png"},
 }
 
 const COST_BOX := 950
@@ -85,8 +85,7 @@ func _ready() -> void:
 	# Mauszeiger aus dem Pack (Spitze oben links); im Spiel bleibt das Fadenkreuz
 	# Als Image uebergeben: eine Textur wuerde vom Betriebssystem-Cursor bis nach dem
 	# Grafik-Server festgehalten (Fehlermeldung beim Beenden)
-	var cursor: Texture2D = load("res://art/pack/ui/cursor.png")
-	Input.set_custom_mouse_cursor(cursor.get_image(), Input.CURSOR_ARROW, Vector2(1, 1))
+	Input.set_custom_mouse_cursor(Pack.tex("ui/cursor").get_image(), Input.CURSOR_ARROW, Vector2(1, 1))
 	_keys("move_left", [KEY_A, KEY_LEFT])
 	_keys("move_right", [KEY_D, KEY_RIGHT])
 	_keys("move_up", [KEY_W, KEY_UP])
@@ -108,6 +107,7 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	SheetAnims.clear()
+	Pack.clear()
 
 
 ## F11: Vollbild an/aus. Statt des kleinen Startfensters (1280x720 Pixel) wird das
@@ -147,17 +147,17 @@ func weapon_name(id: String, level: int) -> String:
 
 ## Waffe in der Hand (mit Haenden, zeigt nach rechts)
 func weapon_tex(id: String) -> Texture2D:
-	return load(SheetAnims.weapon(id)["texture"])
+	return Pack.tex("guns/gun_" + id)
 
 
 ## Waffe als Symbol (Hotbar, Wandkauf)
 func weapon_icon(id: String) -> Texture2D:
-	return load(SheetAnims.weapon(id)["icon"])
+	return Pack.tex("guns/icon_" + id)
 
 
 ## Patronen-Symbol neben der Munitionsanzeige
 func bullet_icon(id: String) -> Texture2D:
-	return load("res://art/pack/ui/bullet_%s.png" % SheetAnims.weapon(id)["bullet"])
+	return Pack.tex("ui/bullet_" + SheetAnims.weapon(id)["bullet"])
 
 
 ## Zombies pro Runde (aehnlich wie im Vorbild: langsam steigend)
@@ -192,11 +192,11 @@ func panel_style(bg := Color("#f3d9a4"), border := Color("#7a4a21"), width := 3)
 	return sb
 
 
-## 9-Teile-Box aus einer Pack-Grafik. Die Grafiken in art/pack/ui sind schon 3x
-## vergroessert, die Raender (margin) sind daher in diesen grossen Pixeln angegeben.
-func tex_style(path: String, margin: float, content := -1.0) -> StyleBoxTexture:
+## 9-Teile-Box aus einer Oberflaechen-Grafik (Pack.tex("ui/...")). Diese Grafiken sind
+## schon 3x vergroessert, die Raender (margin) sind daher in diesen grossen Pixeln angegeben.
+func tex_style(ui_name: String, margin: float, content := -1.0) -> StyleBoxTexture:
 	var sb := StyleBoxTexture.new()
-	sb.texture = load(path)
+	sb.texture = Pack.tex("ui/" + ui_name)
 	sb.set_texture_margin_all(margin)
 	sb.set_content_margin_all(margin if content < 0.0 else content)
 	return sb
@@ -204,16 +204,16 @@ func tex_style(path: String, margin: float, content := -1.0) -> StyleBoxTexture:
 
 ## Grosses Panel (Shop, Pause, Ende, Punkte) im Stil des Pack-Inventars
 func pack_panel() -> StyleBoxTexture:
-	return tex_style("res://art/pack/ui/panel.png", 18.0, 20.0)
+	return tex_style("panel", 18.0, 20.0)
 
 
 ## Hotbar-Feld; gewaehlt = heller Rahmen
 func pack_cell(selected: bool) -> StyleBoxTexture:
-	return tex_style("res://art/pack/ui/cell_chosen.png" if selected else "res://art/pack/ui/cell.png", 9.0, 9.0)
+	return tex_style("cell_chosen" if selected else "cell", 9.0, 9.0)
 
 
-func _button_box(path: String, bottom: float, pressed := false) -> StyleBoxTexture:
-	var sb := tex_style(path, 15.0)
+func _button_box(ui_name: String, bottom: float, pressed := false) -> StyleBoxTexture:
+	var sb := tex_style(ui_name, 15.0)
 	sb.texture_margin_bottom = bottom
 	sb.content_margin_left = 18.0
 	sb.content_margin_right = 18.0
@@ -224,10 +224,10 @@ func _button_box(path: String, bottom: float, pressed := false) -> StyleBoxTextu
 
 ## Knopf im Stil der Pack-Menueknoepfe (leere Vorlage, Text kommt vom Spiel)
 func style_button(b: Button) -> void:
-	b.add_theme_stylebox_override("normal", _button_box("res://art/pack/ui/button.png", 18.0))
-	b.add_theme_stylebox_override("hover", _button_box("res://art/pack/ui/button_hover.png", 18.0))
-	b.add_theme_stylebox_override("pressed", _button_box("res://art/pack/ui/button_pressed.png", 12.0, true))
-	var off := _button_box("res://art/pack/ui/button.png", 18.0)
+	b.add_theme_stylebox_override("normal", _button_box("button", 18.0))
+	b.add_theme_stylebox_override("hover", _button_box("button_hover", 18.0))
+	b.add_theme_stylebox_override("pressed", _button_box("button_pressed", 12.0, true))
+	var off := _button_box("button", 18.0)
 	off.modulate_color = Color(0.8, 0.76, 0.76)
 	b.add_theme_stylebox_override("disabled", off)
 	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())

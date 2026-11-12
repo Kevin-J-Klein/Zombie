@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://art/asset_pack/Objects/Pickable/Bullet-box_1_Red.png" id="1_tex"]
+
+[node name="bullet_box_1_red" type="Node2D"]
+
+[node name="Sprite" type="Sprite2D" parent="."]
+texture = ExtResource("1_tex")
+centered = false
+offset = Vector2(-3, -4)

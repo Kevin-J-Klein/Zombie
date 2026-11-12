@@ -4,7 +4,6 @@ extends Node2D
 
 const PLAYER_SCENE := preload("res://scenes/player.tscn")
 const ZOMBIE_SCENE := preload("res://scenes/zombie.tscn")
-const BLOOD := [preload("res://art/blood_0.png"), preload("res://art/blood_1.png"), preload("res://art/blood_2.png")]
 const MAX_DECALS := 140
 
 var level: Level
@@ -329,7 +328,7 @@ func gnome_shot(pos: Vector2) -> void:
 	Save.contract_event("gnomes", gnomes)
 	fx_ring(pos, 10.0, Color("#ffd84a"))
 	if gnomes < 3:
-		announce("Gartenzwerg erwischt (%d/3)" % gnomes)
+		announce("Glückspilz erwischt (%d/3)" % gnomes)
 		return
 	add_points(1000)
 	var missing: Array[String] = []
@@ -337,11 +336,11 @@ func gnome_shot(pos: Vector2) -> void:
 		if not perks.has(id):
 			missing.append(id)
 	if missing.is_empty():
-		announce("Alle Gartenzwerge erwischt!", "+1000 Punkte")
+		announce("Alle Glückspilze erwischt!", "+1000 Punkte")
 	else:
 		var gift: String = missing.pick_random()
 		give_perk(gift)
-		announce("Alle Gartenzwerge erwischt!", "+1000 Punkte und Gratis-Perk: %s" % G.PERKS[gift]["name"])
+		announce("Alle Glückspilze erwischt!", "+1000 Punkte und Gratis-Perk: %s" % G.PERKS[gift]["name"])
 
 
 # ------------------------------------------------------------------ Spieler-Ereignisse
@@ -455,7 +454,7 @@ func fx_blood(pos: Vector2, dir: Vector2) -> void:
 	shot.flip_h = dir.x < 0.0
 
 	var s := Sprite2D.new()
-	s.texture = BLOOD.pick_random()
+	s.texture = Pack.file("Enemies/Blood/Blood_%d.png" % randi_range(1, 3))
 	s.position = pos + Vector2(0, 8) + dir * randf_range(2.0, 10.0)
 	s.rotation = randf() * TAU
 	s.modulate.a = 0.85

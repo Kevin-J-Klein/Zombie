@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://art/asset_pack/Objects/Vehicles/Overgrown/Car_4_Overgrown/Green/Car_4_Overgrown_Green_Gray.png" id="1_tex"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_solid"]
+size = Vector2(38, 12)
+
+[node name="car_4_overgrown_green_gray" type="Node2D"]
+
+[node name="Sprite" type="Sprite2D" parent="."]
+texture = ExtResource("1_tex")
+centered = false
+offset = Vector2(-21, -22)
+
+[node name="Solid" type="StaticBody2D" parent="."]
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Solid"]
+position = Vector2(0, -6)
+shape = SubResource("RectangleShape2D_solid")

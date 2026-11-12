@@ -13,7 +13,7 @@ func setup(p_game: Node, p_kind: String) -> void:
 	game = p_game
 	kind = p_kind
 	sprite = Sprite2D.new()
-	sprite.texture = load(G.POWERUPS[kind]["tex"])
+	sprite.texture = Pack.file(G.POWERUPS[kind]["tex"])
 	add_child(sprite)
 
 

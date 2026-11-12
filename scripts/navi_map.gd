@@ -13,7 +13,6 @@ const INK := Color("#18141c")
 const ORANGE := Color("#e88040")
 const CREAM := Color("#ece2c8")
 const LOCKED := Color("#6e6876")
-const LOCK_TEX := preload("res://art/pack/ui/lock.png")
 
 var selected := ""
 
@@ -68,7 +67,8 @@ func _draw() -> void:
 		draw_circle(p, 12.0, INK)
 		if not open:
 			draw_circle(p, 10.0, LOCKED)
-			draw_texture(LOCK_TEX, p - LOCK_TEX.get_size() * 0.5)
+			var lock := Pack.tex("ui/lock")
+			draw_texture(lock, p - lock.get_size() * 0.5)
 		elif id == selected:
 			draw_circle(p, 10.0, ORANGE)
 			draw_circle(p, 4.0, CREAM)

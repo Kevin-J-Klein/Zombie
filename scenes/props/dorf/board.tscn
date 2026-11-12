@@ -1,0 +1,47 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://art/asset_pack/Objects/Buildable/Wooden/Wooden-wall_Horizontal.png" id="1_4slfw"]
+[ext_resource type="Texture2D" path="res://art/asset_pack/Objects/Buildings/layered-posters_1_For-ground-and-walls.png" id="2_nifdu"]
+[ext_resource type="Texture2D" path="res://art/asset_pack/Objects/Buildings/layered-posters_2_For-ground-and-walls.png" id="3_frvn1"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_v3p1q"]
+size = Vector2(26, 6)
+
+[node name="board" type="Node2D" unique_id=519494935]
+
+[node name="Brett_oben_links" type="Sprite2D" parent="." unique_id=8573921]
+position = Vector2(-16, -28)
+texture = ExtResource("1_4slfw")
+centered = false
+
+[node name="Brett_oben_rechts" type="Sprite2D" parent="." unique_id=1093502207]
+position = Vector2(0, -28)
+texture = ExtResource("1_4slfw")
+centered = false
+
+[node name="Brett_unten_links" type="Sprite2D" parent="." unique_id=891789051]
+position = Vector2(-16, -14)
+texture = ExtResource("1_4slfw")
+centered = false
+
+[node name="Brett_unten_rechts" type="Sprite2D" parent="." unique_id=756014281]
+position = Vector2(0, -14)
+texture = ExtResource("1_4slfw")
+centered = false
+
+[node name="Plakat_links" type="Sprite2D" parent="." unique_id=1361260087]
+position = Vector2(-15, -26)
+texture = ExtResource("2_nifdu")
+centered = false
+
+[node name="Plakat_rechts" type="Sprite2D" parent="." unique_id=963822184]
+position = Vector2(1, -24)
+texture = ExtResource("3_frvn1")
+centered = false
+
+[node name="Solid" type="StaticBody2D" parent="." unique_id=1438112117]
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape2D" parent="Solid" unique_id=1622695551]
+position = Vector2(0, -3)
+shape = SubResource("RectangleShape2D_v3p1q")

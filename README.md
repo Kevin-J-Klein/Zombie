@@ -60,7 +60,7 @@ Die Dateien liegen in `user://save_1.json` bis `save_3.json`, die Einstellungen 
 - Perk-Automaten und die Upgrade-Werkbank brauchen Strom. Der Schalter ist im Lagerraum des Markts.
 - **Haupt-Quest:** Strom einschalten → 3 Funkteile finden → Funkgerät im Markt reparieren →
   90 Sekunden durchhalten → zum Landeplatz im Garten laufen.
-- **Neben-Easter-Egg:** Drei versteckte Gartenzwerge abschiessen.
+- **Neben-Easter-Egg:** Drei versteckte Glückspilze abschiessen.
 
 ## Aufbau
 
@@ -77,30 +77,73 @@ Die Dateien liegen in `user://save_1.json` bis `save_3.json`, die Einstellungen 
 | `scripts/main_menu.gd` | Startbildschirm: Spielstand wählen, benennen, löschen |
 | `scripts/hub_data.gd` | Werte für Schrott, Startwaffen-Preise, Aufträge und Navi-Ziele |
 | `scripts/fade.gd` | Autoload `Fade`: Überblenden zwischen Dorf und Level |
-| `scripts/village_data.gd` | Das Dorf als Textkarte plus Liste der Objekte |
-| `scripts/village.gd`, `scripts/village_player.gd` | Baut das Dorf, Spielfigur im Dorf (Szene `scenes/village.tscn`) |
+| `scenes/village.tscn` | Das Dorf – wird im Godot-Editor gebaut (siehe «Das Dorf im Editor bauen») |
+| `scripts/village.gd`, `scripts/village_player.gd` | Liest das Dorf aus der Szene, Spielfigur im Dorf |
+| `scripts/village_spot.gd`, `village_tag.gd`, `zombie_zone.gd` | Editor-Knoten im Dorf: Ort zum Benutzen, Namensschild, Zombie-Bereich |
+| `scenes/props/` | Objekt-Bibliothek: jedes Pack-Objekt als Szene zum Hineinziehen |
 | `scripts/village_ui.gd`, `scripts/navi_map.gd` | Fenster im Dorf: Haus, Shop, Auftragsbrett, Navi, Einstellungen |
-| `art/asset_pack/` | Das Asset-Pack (Quelle, wird von Godot ignoriert) |
-| `art/pack/` | Spielfertige Grafiken aus dem Pack, erzeugt von `tools/import_asset_pack.py` |
-| `scripts/sheet_anims.gd` | Baut die Animationen aus `art/pack/anims.json` |
-| `art/` | Restliche Platzhalter-Grafiken, erzeugt von `tools/make_placeholder_art.py` |
+| `art/asset_pack/` | Das Asset-Pack – alle Grafiken des Spiels (nur lokal, nicht auf GitHub, siehe «Grafik») |
+| `art/kacheln.tres` | TileSet mit allen Tile-Sheets aus `art/asset_pack/Tiles` (Boden, Dächer, Mauern …) |
+| `scripts/pack.gd` | Lädt Pack-Grafiken; setzt im Speicher zusammen, was das Spiel umgebaut braucht |
+| `scripts/sheet_anims.gd` | Macht aus den Figuren-Animationen von `pack.gd` SpriteFrames |
 | `tests/smoke_test.tscn` | Automatischer Durchlauf aller Systeme |
+
+## Das Dorf im Editor bauen
+
+`scenes/village.tscn` im Godot-Editor öffnen. Alles, was man dort sieht, ist auch so im Spiel.
+
+- **Boden malen:** Knoten `Boden` wählen, unten öffnet sich das TileMap-Fenster. Das Tileset
+  `art/kacheln.tres` enthält jedes Tile-Sheet aus `art/asset_pack/Tiles` (Liste links: Hintergrund
+  grün/dunkelgrün/gelb, Dächer, Gebäude, Mauern, Zäune …).
+  - *Tiles:* eine Kachel anklicken und malen. Mehrere Kacheln markieren und den Würfel
+    (Zufall) einschalten, dann werden sie gemischt – gut für Gras und Pflaster.
+  - *Terrains:* «Gras», «Pflaster» oder «Asphalt» wählen und malen; Varianten werden zufällig
+    gemischt.
+- **Randsteine und andere Auflagen:** Knoten `Kanten` (liegt über `Boden`, gleiches Tileset).
+  Die Randsteine um den Platz sind Gras-Kacheln mit durchsichtigem Rand aus «Hintergrund grün»
+  (rechts oben im Sheet, der Ring um das leere Feld) – das Pflaster darunter liegt auf `Boden`.
+  Passendes Stück anklicken und an den Rand des Platzes setzen.
+- **Objekte hinstellen:** im Dateisystem-Fenster `scenes/props/` öffnen (Ordner `dorf`, `natur`,
+  `strasse`, `fahrzeuge`, `container`, `gebaeude`, `barrikaden`, `aufsammeln`). Zuerst den Knoten
+  `Objekte` in der Szene wählen, dann die Szene in die Ansicht ziehen. Der Punkt des Objekts ist
+  sein Fuss – nach ihm wird sortiert, wer vor wem steht. Ctrl+D kopiert ein Objekt.
+  Objekte unter `Objekte` (oder in Untergruppen wie `Randbaeume`) gehören nach y sortiert.
+- **Festen Bereich anpassen:** Jedes Objekt hat einen Kasten `Solid/Shape`, durch den man nicht
+  läuft. Wirkt er falsch, die Szene in `scenes/props/` öffnen und den Kasten anpassen – das gilt
+  dann für alle Exemplare. Objekte ohne Kasten (Blumen, Gras) sind begehbar.
+- **Orte zum Benutzen** (`Orte`): gelber Kreis = wie nah man mit E herankommen muss. Im Inspektor
+  stehen Art (`house`, `shop`, `board`, `car`), Reichweite und Hinweistext.
+- **Namensschilder** (`Schilder`), **Startpunkte** (`Start`, `StartNachPartie`) und die
+  **Zombie-Bereiche** hinter dem Zaun (`Zombies`, rotes Rechteck) einfach verschieben.
+- **Unsichtbare Wände** (`Grenzen`): die blauen Kästen; damit läuft man nicht in den Wald oder
+  auf die Strasse neben dem Wagen.
+- **Mehr Objekte:** jedes Bild aus `art/asset_pack/` lässt sich auch direkt in die Ansicht ziehen
+  (wird ein Sprite2D). Für ein Objekt mit Fusspunkt und festem Bereich eine ähnliche Szene in
+  `scenes/props/` duplizieren (Rechtsklick → Duplizieren) und das Bild austauschen.
+- **Haus, Laden, Auftragsbrett, Händler** (`scenes/props/dorf/`) sind aus Pack-Teilen gebaut:
+  Mauern und Dach als Kachel-Ebene `Mauern_und_Dach`, Fenster, Türen, Automaten als einzelne Bilder.
+  Szene öffnen, umbauen – das gilt für alle Exemplare.
 
 ## Anpassen
 
 - **Karte:** `scripts/level_data.gd` bearbeiten, die Legende steht oben in der Datei.
 - **Balance:** Werte in `scripts/globals.gd` (Schaden, Preise, Zombies pro Runde).
-- **Dorf:** Karte und Objekte in `scripts/village_data.gd`. Schrott-Formel, Preise der Startwaffen,
+- **Dorf:** wird im Godot-Editor gebaut, siehe unten. Schrott-Formel, Preise der Startwaffen,
   Aufträge und Navi-Ziele in `scripts/hub_data.gd`. Ein neues Level wird dort als Ziel eingetragen
   (`scene` = Szene des Levels, `unlock` = Bedingung zum Freischalten).
-- **Grafik:** Die Grafiken kommen aus dem Asset-Pack in `art/asset_pack/`. Nach einer Änderung am Pack
-  `python3 tools/import_asset_pack.py` ausführen (braucht Pillow: `pip3 install pillow`). Das Skript
-  schneidet und kombiniert die Pack-Grafiken nach `art/pack/` – welche Pack-Datei wofür benutzt wird,
-  steht dort an einer Stelle. Kacheln sind 16×16 (`tiles.png`: 10 Bodentypen × 4 Varianten,
-  `walls.png`: Wände je nach Nachbarwänden). Figuren laufen in 4 Richtungen; Normale Zombies sind
-  `Zombie_Small`, Renner der Axt-Zombie. Wofür der Pack nichts hat (Stromschalter, Funkteile,
-  Gartenzwerge, einige Power-ups, Blutflecken), bleiben die Platzhalter aus `art/`.
-  `art/asset_pack/.gdignore` blendet den Pack im Godot-Editor aus; löschen, um ihn dort zu sehen.
+- **Grafik:** Alle Grafiken kommen direkt aus dem Asset-Pack in `art/asset_pack/` (dazu gehören
+  auch die Blutflecken in `Enemies/Blood/`). Der Pack ist **nicht auf GitHub** (er darf nicht
+  öffentlich verteilt werden): Wer das Projekt klont, legt seine Kopie des Packs nach
+  `art/asset_pack/`. Auf GitHub liegen davon nur die `.import`-Dateien, damit alle dieselben
+  Godot-IDs haben. Szenen zeigen direkt auf Pack-Dateien; was umgebaut werden muss, setzt
+  `scripts/pack.gd` beim Start im Speicher zusammen (Boden- und Wand-Atlas der Level, eingefärbte
+  Waffen und Automaten, 3× vergrösserte Oberfläche, Figuren-Streifen) – welche Pack-Datei wofür
+  benutzt wird, steht dort. Kacheln sind 16×16. Figuren laufen in 4 Richtungen; normale Zombies
+  sind `Zombie_Small`, Renner der Axt-Zombie. Wofür der Pack kein eigenes Bild hat, steht ein
+  ähnliches Pack-Bild: Stromschalter = Metalltür, Funkteil = Antenne, Glückspilze (Easter Egg) =
+  Pilz, Sofort-Kill = Schläger, Doppelte Punkte = Chipstüte, Bombe = rotes Fass, Perk-Symbol =
+  Dose. Nur Landeplatz-Markierung und die kleinen Dorf-Symbole (Totenkopf, Schloss, Zahnrad)
+  zeichnet `pack.gd` selbst.
 
 ## Test
 
