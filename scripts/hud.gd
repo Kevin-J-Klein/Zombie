@@ -359,7 +359,7 @@ func _build_pause() -> void:
 	pause_panel = pv[0]
 	var v: VBoxContainer = pv[1]
 	v.add_child(_title("PAUSE"))
-	var help := _label("WASD  bewegen          Maus  zielen\nLinksklick  schiessen     R  nachladen\nRechtsklick / V  Messer     Shift  sprinten\nE  benutzen / kaufen     Q / 1 / 2  Waffe wechseln\nE halten  Barrikade reparieren", 15, TEXT, false)
+	var help := _label("WASD  bewegen          Maus  zielen\nLinksklick  schiessen     R  nachladen\nRechtsklick / V  Messer     Shift  sprinten\nE  benutzen / kaufen     Q / 1 / 2  Waffe wechseln\nE halten  Barrikade reparieren     F11  Vollbild", 15, TEXT, false)
 	help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(help)
 	var spacer := Control.new()

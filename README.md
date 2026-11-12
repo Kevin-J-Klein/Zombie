@@ -25,6 +25,7 @@ einen Shop, ein Auftragsbrett und den Wagen, mit dem man ins Level fährt.
 | E | benutzen / kaufen (halten: Barrikade reparieren) |
 | Q / 1 / 2 / Mausrad | Waffe wechseln |
 | Esc / P | Pause |
+| F11 | Vollbild an/aus (startet im Vollbild) |
 
 ## Das Dorf (Hauptmenü)
 

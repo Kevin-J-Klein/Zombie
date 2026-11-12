@@ -99,6 +99,7 @@ func _ready() -> void:
 	_keys("weapon_1", [KEY_1])
 	_keys("weapon_2", [KEY_2])
 	_keys("pause", [KEY_ESCAPE, KEY_P])
+	_keys("fullscreen", [KEY_F11])
 	_mouse("shoot", MOUSE_BUTTON_LEFT)
 	_mouse("melee", MOUSE_BUTTON_RIGHT)
 	_mouse("swap", MOUSE_BUTTON_WHEEL_UP)
@@ -107,6 +108,17 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	SheetAnims.clear()
+
+
+## F11: Vollbild an/aus. Statt des kleinen Startfensters (1280x720 Pixel) wird das
+## Fenster dann maximiert; das Bild skaliert sich in beiden Faellen mit (Stretch-Modus).
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("fullscreen"):
+		if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN:
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_MAXIMIZED)
+		else:
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+		get_viewport().set_input_as_handled()
 
 
 func _keys(action: String, keys: Array) -> void:
