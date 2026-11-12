@@ -1,5 +1,6 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
+[ext_resource type="Script" path="res://scripts/figur_vorschau.gd" id="9_figur"]
 [ext_resource type="Script" path="res://scripts/zombie.gd" id="1_script"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_feet"]
@@ -13,8 +14,11 @@ collision_layer = 0
 collision_mask = 1
 motion_mode = 1
 script = ExtResource("1_script")
+art_name = "Zombie"
 
 [node name="Body" type="AnimatedSprite2D" parent="."]
+script = ExtResource("9_figur")
+gruppe = "zombie_small"
 
 [node name="Shape" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_feet")

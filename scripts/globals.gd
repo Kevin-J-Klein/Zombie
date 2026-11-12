@@ -11,18 +11,6 @@ const L_HURT := 4       # Trefferzonen der Zombies
 const START_POINTS := 500
 const MAX_ZOMBIES_ALIVE := 24
 
-## Panzer-Zombie (der grosse Zombie aus dem Asset-Pack): langsam, zaeh, schlaegt hart zu.
-## Ab TANK_FROM_ROUND mit TANK_CHANCE_PER_ROUND mehr Wahrscheinlichkeit je Runde, hoechstens TANK_MAX_CHANCE.
-const TANK_FROM_ROUND := 4
-const TANK_CHANCE_PER_ROUND := 0.04
-const TANK_MAX_CHANCE := 0.2
-const TANK_HP_MULT := 4.0
-const TANK_SPEED := 20.0
-const TANK_DAMAGE := 80.0
-const TANK_WINDUP := 0.55       # laenger ausholen als normale Zombies (0.3 s): Zeit zum Ausweichen
-const TANK_TEAR_TIME := 0.8     # reisst Bretter schneller ab (normal 1.3 s)
-const TANK_KILL_BONUS := 140    # zusaetzlich zu den normalen Kill-Punkten
-
 ## Waffen. damage = Schaden pro Kugel, rate = Sekunden zwischen Schuessen,
 ## pierce = wie viele Zombies eine Kugel durchschlaegt, box = nur aus der Mystery-Box.
 const WEAPONS := {
@@ -166,13 +154,6 @@ func zombies_for_round(r: int) -> int:
 	if r <= table.size():
 		return table[r - 1]
 	return int(24 + (r - 5) * 5 + pow(r - 5, 1.5))
-
-
-## Wahrscheinlichkeit, dass ein neuer Zombie in Runde r ein Panzer-Zombie ist
-func tank_chance(r: int) -> float:
-	if r < TANK_FROM_ROUND:
-		return 0.0
-	return minf(TANK_CHANCE_PER_ROUND * (r - TANK_FROM_ROUND + 1), TANK_MAX_CHANCE)
 
 
 func zombie_health(r: int) -> float:

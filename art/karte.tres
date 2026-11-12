@@ -1,6 +1,6 @@
-[gd_resource type="TileSet" format=3]
+[gd_resource type="TileSet" format=3 uid="uid://b24yb8shi8l86"]
 
-[ext_resource type="Texture2D" path="res://art/karte.png" id="1_q0y8m"]
+[ext_resource type="Texture2D" uid="uid://yhrwsmmays1b" path="res://art/karte.png" id="1_q0y8m"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_tr4uj"]
 resource_name = "Karte"

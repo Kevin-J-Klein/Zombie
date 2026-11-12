@@ -1,5 +1,6 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
+[ext_resource type="Script" path="res://scripts/figur_vorschau.gd" id="9_figur"]
 [ext_resource type="Script" path="res://scripts/player.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://art/asset_pack/Character/Guns/Fire/Fire_side-Sheet3.png" id="4_fire"]
 
@@ -17,6 +18,8 @@ motion_mode = 1
 script = ExtResource("1_script")
 
 [node name="Body" type="AnimatedSprite2D" parent="."]
+script = ExtResource("9_figur")
+gruppe = "player"
 
 [node name="Gun" type="Node2D" parent="."]
 position = Vector2(0, -6)

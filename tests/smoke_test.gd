@@ -111,20 +111,45 @@ func run() -> void:
 	check(game.kills >= 14, "Kills werden gezaehlt (%d)" % game.kills)
 
 	# --- Panzer-Zombie
-	check(G.tank_chance(G.TANK_FROM_ROUND - 1) == 0.0 and G.tank_chance(30) == G.TANK_MAX_CHANCE,
-		"Panzer-Zombies erst ab Runde %d, Anteil begrenzt" % G.TANK_FROM_ROUND)
-	var tank: Zombie = game.ZOMBIE_SCENE.instantiate()
-	tank.setup(game, 5, true)
+	# Zombie-Arten aus scenes/zombies/
+	var arten := {}
+	for scene in game.ZOMBIE_ARTEN:
+		var proto: Zombie = scene.instantiate()
+		arten[proto.art_name] = scene
+		proto.free()
+	check(arten.has("Zombie") and arten.has("Renner") and arten.has("Panzer-Zombie") and game.ZOMBIE_ARTEN[-1] == arten["Zombie"],
+		"3 Zombie-Arten, normaler Zombie nimmt den Rest")
+	var panzer_scene: PackedScene = arten["Panzer-Zombie"]
+	check(game.zombie_chance(panzer_scene, 3) == 0.0 and game.zombie_chance(panzer_scene, 4) > 0.0
+		and is_equal_approx(game.zombie_chance(panzer_scene, 30), 0.2), "Panzer-Zombies erst ab Runde 4, Anteil begrenzt")
+	check(game.zombie_chance(arten["Renner"], 2) == 0.0 and is_equal_approx(game.zombie_chance(arten["Renner"], 3), 0.15),
+		"Renner ab Runde 3")
+	var picks := {}
+	for i in 400:
+		var s: PackedScene = game.pick_zombie(2)
+		picks[s] = true
+	check(picks.size() == 1 and picks.has(arten["Zombie"]), "In Runde 2 nur normale Zombies")
+	for art in ["Zombie", "Renner", "Panzer-Zombie"]:
+		var z: Zombie = arten[art].instantiate()
+		z.setup(game, 5)
+		z.position = level.cell_center(Vector2i(13, 12))
+		level.entities.add_child(z)
+		await wait(0.1)
+		var want: String = {"Zombie": "zombie_small", "Renner": "zombie_axe", "Panzer-Zombie": "zombie_big"}[art]
+		check(z.body.gruppe == want and z.body.sprite_frames.has_animation(&"walk_side"), "%s laeuft mit Figur %s" % [art, want])
+		z.die(false, false)
+	var tank: Zombie = panzer_scene.instantiate()
+	tank.setup(game, 5)
 	tank.position = level.cell_center(Vector2i(13, 12))
 	level.entities.add_child(tank)
-	check(tank.tank and not tank.runner and tank.hp == G.zombie_health(5) * G.TANK_HP_MULT and tank.speed < 25.0,
-		"Panzer-Zombie: viel Leben, langsam")
+	check(tank.hp == G.zombie_health(5) * 4.0 and tank.speed < 25.0 and tank.kill_bonus == 140
+		and (tank.get_node("Shape").shape as CircleShape2D).radius == 5.0, "Panzer-Zombie: viel Leben, langsam, breiter Koerper")
 	await wait(1.2)
 	check(tank.body.sprite_frames.has_animation(&"attack_side") and String(tank.body.animation).begins_with("walk"),
 		"Panzer-Zombie laeuft mit eigener Animation (%s)" % tank.body.animation)
 	var pts_before: int = game.points
 	tank.hit(1e9, Vector2.RIGHT, false)
-	var tank_pts := (60 + G.TANK_KILL_BONUS) * (2 if game.double_points_t > 0.0 else 1)
+	var tank_pts := (60 + 140) * (2 if game.double_points_t > 0.0 else 1)
 	check(game.points - pts_before == tank_pts, "Panzer-Zombie gibt Bonuspunkte (%d)" % (game.points - pts_before))
 
 	# --- Tueren

@@ -54,7 +54,8 @@ Die Dateien liegen in `user://save_1.json` bis `save_3.json`, die Einstellungen 
 
 - Zombies kommen durch die verbarrikadierten Fenster. Treffer geben 10 Punkte, Kills 60 (Messer 130).
 - Ab Runde 4 tauchen Panzer-Zombies auf: langsam, viermal so viel Leben, harter Schlag mit langem
-  Ausholen, reissen Bretter schneller ab. Kill gibt 140 Bonuspunkte. Werte in `scripts/globals.gd` (`TANK_…`).
+  Ausholen, reissen Bretter schneller ab. Kill gibt 140 Bonuspunkte. Werte im Inspektor von
+  `scenes/zombies/zombie_panzer.tscn` (siehe «Zombie-Arten»).
 - Mit Punkten kaufst du Türen, Waffen an der Wand, Sachen im Shop-Terminal (Startraum),
   die Mystery-Box (Markt), Perks und Waffen-Upgrades.
 - Perk-Automaten und die Upgrade-Werkbank brauchen Strom. Der Schalter ist im Lagerraum des Markts.
@@ -72,7 +73,8 @@ Die Dateien liegen in `user://save_1.json` bis `save_3.json`, die Einstellungen 
 | `scripts/level_object.gd` | Editor-Knoten im Level: Tür, Wandkauf, Perk, Shop, Box, Kiste, Startpunkt … |
 | `art/karte.tres`, `art/karte.png` | Tileset zum Malen der Level-Karte (Wand, Fenster, Hecke, Bodenarten, Spawn) |
 | `scripts/game.gd` | Runden, Spawns, Punkte, Power-ups, Shop, Quest |
-| `scripts/player.gd`, `scripts/zombie.gd` | Spieler und Zombie (Szenen in `scenes/`) |
+| `scripts/player.gd`, `scripts/zombie.gd` | Spieler und Zombie (`scenes/player.tscn`, Zombie-Arten in `scenes/zombies/`) |
+| `scripts/figur_vorschau.gd` | Figur (Knoten `Body`): zeigt Spieler/Zombie auch im Editor an |
 | `scripts/interactable.gd` | Wandkauf, Shop, Box, Werkbank, Strom, Funkgerät, Perks |
 | `scripts/hud.gd` | Anzeige und Menüs im Level |
 | `scripts/save.gd` | Autoload `Save`: 3 Speicherplätze (Schrott, Rekorde, Startwaffen, Aufträge, Ziele), Einstellungen |
@@ -163,6 +165,21 @@ Die Szene hat zwei Teile unter `Level`:
   Landeplatz.
 - **Neues Level:** `vorstadt.tscn` im Dateisystem duplizieren, umbauen und in
   `scripts/hub_data.gd` beim Ziel unter `scene` eintragen (z. B. `res://scenes/tankstelle.tscn`).
+
+## Zombie-Arten
+
+Jede Art ist eine Szene in `scenes/zombies/`: `zombie.tscn` (normal, Basis), `zombie_renner.tscn`,
+`zombie_panzer.tscn`. Renner und Panzer sind **geerbte Szenen** – sie übernehmen alles von
+`zombie.tscn` und ändern nur ihre Werte. Eine Änderung an der Basis gilt für alle Arten.
+
+- **Werte** (Wurzel-Knoten, Inspektor): Leben-Faktor, Tempo, Schaden, Ausholzeit, Zeit pro Brett,
+  Kill-Bonus, Ankündigung beim ersten Auftauchen, Auftrags-Ereignis.
+- **Spawn** (gleiche Stelle): ab Runde, Anteil am Anfang, pro Runde mehr, höchstens.
+- **Figur:** Knoten `Body`, Feld «Gruppe» (`zombie_small`, `zombie_axe`, `zombie_big`).
+- **Körper / Trefferzone:** Knoten `Shape` und `Hurtbox/HurtShape` – direkt im Editor ziehen.
+- **Neue Art:** Rechtsklick auf `scenes/zombies/zombie.tscn` → «Neue geerbte Szene», Werte setzen,
+  in `scenes/zombies/` speichern und in `scripts/game.gd` in `ZOMBIE_ARTEN` eintragen. Die Arten
+  werden in dieser Reihenfolge ausgewürfelt, der letzte Eintrag (normaler Zombie) nimmt den Rest.
 
 ## Anpassen
 

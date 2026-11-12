@@ -1,14 +1,54 @@
 class_name Zombie
 extends CharacterBody2D
 ## Zombie: steigt aus dem Boden, laeuft per Wegfindung zum Spieler, reisst
-## Barrikaden ab und greift im Nahkampf an. Drei Arten: normal, Renner (Axt-Zombie)
-## und ab Runde G.TANK_FROM_ROUND der langsame, zaehe Panzer-Zombie.
+## Barrikaden ab und greift im Nahkampf an.
+##
+## Jede Zombie-Art ist eine eigene Szene in scenes/zombies/, geerbt von zombie.tscn
+## (normaler Zombie). Was eine Art ausmacht, steht im Inspektor der Wurzel (Werte unten);
+## die Figur waehlt man am Knoten «Body» (Gruppe), Koerper und Trefferzone an «Shape» und
+## «Hurtbox/HurtShape». Welche Arten es gibt, listet game.gd (ZOMBIE_ARTEN).
 
 enum St { RISE, CHASE, TEAR, WINDUP, DEAD }
 
 const RISE_TIME := 0.8
-const TEAR_TIME := 1.3
 const ATTACK_RANGE := 14.0
+
+@export_group("Art")
+## Name fuer Anzeigen und Tests
+@export var art_name := "Zombie"
+## Meldung, wenn diese Art zum ersten Mal in einer Partie auftaucht (leer = keine)
+@export var ankuendigung := ""
+@export var ankuendigung_text := ""
+## Auftrags-Ereignis beim Kill (z. B. "tank_kill" fuer Auftraege in hub_data.gd; leer = keins)
+@export var auftrag_kill := ""
+
+@export_group("Werte")
+## Leben = Rundenleben (G.zombie_health) mal diesen Faktor
+@export var leben_faktor := 1.0
+## Tempo wird zwischen min und max ausgewuerfelt ...
+@export var tempo_min := 24.0
+@export var tempo_max := 34.0
+## ... plus pro Runde so viel dazu (hoechstens 10 Runden lang)
+@export var tempo_pro_runde := 1.0
+@export var schaden := 45.0
+## Sekunden vom Ausholen bis zum Treffer (Zeit zum Ausweichen)
+@export var ausholen := 0.3
+## Sekunden pro abgerissenes Brett
+@export var bretter_zeit := 1.3
+## Zusaetzliche Punkte fuer den Kill
+@export var kill_bonus := 0
+## Bei welchem Tempo die Lauf-Animation normal schnell laeuft (Schritte passend zum Tempo)
+@export var schritt_tempo := 30.0
+
+@export_group("Spawn")
+## Ab dieser Runde kann die Art auftauchen
+@export var ab_runde := 1
+## Anteil in der ersten Runde (0-1), pro Runde mehr, hoechstens anteil_max.
+## Die Arten werden in der Reihenfolge von ZOMBIE_ARTEN (game.gd) ausgewuerfelt;
+## die letzte (normaler Zombie) nimmt den Rest.
+@export_range(0.0, 1.0, 0.01) var anteil_start := 1.0
+@export_range(0.0, 1.0, 0.01) var anteil_pro_runde := 0.0
+@export_range(0.0, 1.0, 0.01) var anteil_max := 1.0
 
 var game: Node
 var level: Level
@@ -16,9 +56,6 @@ var player: Player
 
 var hp := 150.0
 var speed := 30.0
-var damage := 45.0
-var runner := false
-var tank := false
 
 var state := St.RISE
 var state_t := RISE_TIME
@@ -32,42 +69,30 @@ var anim_t := 0.0
 var facing := "down"                 # side = rechts, left, up, down (wie die Pack-Animationen)
 var foot_y := -9.0                   # Sprite-Versatz, damit die Fuesse auf dem Ursprung stehen
 
-@onready var body: AnimatedSprite2D = $Body
+@onready var body: FigurVorschau = $Body
 @onready var hurtbox: Area2D = $Hurtbox
 
 
-func setup(p_game: Node, round_num: int, force_tank := false) -> void:
+## Anteil dieser Art an den Zombies einer Runde (0-1), siehe Gruppe «Spawn».
+func chance(round_num: int) -> float:
+	if round_num < ab_runde:
+		return 0.0
+	return minf(anteil_start + anteil_pro_runde * (round_num - ab_runde), anteil_max)
+
+
+func setup(p_game: Node, round_num: int) -> void:
 	game = p_game
 	level = game.level
 	player = game.player
-	hp = G.zombie_health(round_num)
-	tank = force_tank or randf() < G.tank_chance(round_num)
-	if tank:
-		hp *= G.TANK_HP_MULT
-		speed = G.TANK_SPEED + randf_range(-2.0, 2.0)
-		damage = G.TANK_DAMAGE
-		return
-	runner = round_num >= 3 and randf() < minf(0.15 * (round_num - 2), 0.8)
-	if runner:
-		speed = randf_range(56.0, 66.0)
-	else:
-		speed = randf_range(24.0, 34.0) + minf(round_num, 10.0)
+	hp = G.zombie_health(round_num) * leben_faktor
+	speed = randf_range(tempo_min, tempo_max) + tempo_pro_runde * minf(round_num, 10.0)
 
 
 func _ready() -> void:
 	anim_t = randf() * 10.0
-	# Normale Zombies: Zombie_Small, Renner: der hagere Axt-Zombie, Panzer: Zombie_Big
-	var group := "zombie_big" if tank else ("zombie_axe" if runner else "zombie_small")
-	if tank:
-		# Breiterer Koerper und groessere Trefferzone (eigene Shapes: die der Szene teilen sich alle Zombies)
-		var feet := CircleShape2D.new()
-		feet.radius = 5.0
-		$Shape.shape = feet
-		var hurt := RectangleShape2D.new()
-		hurt.size = Vector2(15, 21)
-		$Hurtbox/HurtShape.shape = hurt
-		$Hurtbox/HurtShape.position = Vector2(0, -9)
+	var group: String = body.gruppe
 	body.sprite_frames = SheetAnims.frames(group)
+	body.offset = Vector2.ZERO
 	foot_y = SheetAnims.foot_offset(group)
 	body.position.y = foot_y * 0.05
 	body.play(&"idle_down")
@@ -127,7 +152,7 @@ func _physics_process(delta: float) -> void:
 			state_t -= delta
 			if state_t <= 0.0:
 				if global_position.distance_to(player.global_position) < ATTACK_RANGE + 7.0:
-					player.take_damage(damage)
+					player.take_damage(schaden)
 				attack_cd = 0.8
 				state = St.CHASE
 
@@ -140,7 +165,7 @@ func _chase(delta: float) -> void:
 		_face(to_player)
 		if attack_cd <= 0.0:
 			state = St.WINDUP
-			state_t = G.TANK_WINDUP if tank else 0.3
+			state_t = ausholen
 			body.speed_scale = 1.0
 			_play("attack", true)
 		elif not String(body.animation).begins_with("attack") or not body.is_playing():
@@ -195,11 +220,11 @@ func _chase(delta: float) -> void:
 	_face(dir)
 	_play("walk")
 	# Schrittfrequenz passend zum Tempo
-	body.speed_scale = speed / (48.0 if runner else (22.0 if tank else 30.0))
+	body.speed_scale = speed / schritt_tempo
 
 
 func _tear_time() -> float:
-	return G.TANK_TEAR_TIME if tank else TEAR_TIME
+	return bretter_zeit
 
 
 func hit(amount: float, dir: Vector2, melee: bool) -> void:

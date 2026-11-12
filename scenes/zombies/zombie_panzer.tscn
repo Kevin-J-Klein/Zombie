@@ -1,0 +1,38 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/zombies/zombie.tscn" id="1_base"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_panzer_feet"]
+radius = 5.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_panzer_hurt"]
+size = Vector2(15, 21)
+
+[node name="ZombiePanzer" instance=ExtResource("1_base")]
+art_name = "Panzer-Zombie"
+ankuendigung = "Achtung: Panzer-Zombie!"
+ankuendigung_text = "Langsam, aber zäh – und er schlägt hart zu"
+auftrag_kill = "tank_kill"
+leben_faktor = 4.0
+tempo_min = 18.0
+tempo_max = 22.0
+tempo_pro_runde = 0.0
+schaden = 80.0
+ausholen = 0.55
+bretter_zeit = 0.8
+kill_bonus = 140
+schritt_tempo = 22.0
+ab_runde = 4
+anteil_start = 0.04
+anteil_pro_runde = 0.04
+anteil_max = 0.2
+
+[node name="Body" parent="." index="0"]
+gruppe = "zombie_big"
+
+[node name="Shape" parent="." index="1"]
+shape = SubResource("CircleShape2D_panzer_feet")
+
+[node name="HurtShape" parent="Hurtbox" index="0"]
+position = Vector2(0, -9)
+shape = SubResource("RectangleShape2D_panzer_hurt")

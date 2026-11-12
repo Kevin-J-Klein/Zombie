@@ -1,0 +1,17 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/zombies/zombie.tscn" id="1_base"]
+
+[node name="ZombieRenner" instance=ExtResource("1_base")]
+art_name = "Renner"
+tempo_min = 56.0
+tempo_max = 66.0
+tempo_pro_runde = 0.0
+schritt_tempo = 48.0
+ab_runde = 3
+anteil_start = 0.15
+anteil_pro_runde = 0.15
+anteil_max = 0.8
+
+[node name="Body" parent="." index="0"]
+gruppe = "zombie_axe"

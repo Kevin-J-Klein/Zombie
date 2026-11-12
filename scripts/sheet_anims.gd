@@ -1,3 +1,4 @@
+@tool
 class_name SheetAnims
 extends RefCounted
 ## Baut aus den Pack-Animationen (Pack.anims) SpriteFrames fuer AnimatedSprite2D.

@@ -5,7 +5,14 @@ extends Node2D
 ## im Editor gebaute Karte (siehe level.gd).
 
 const PLAYER_SCENE := preload("res://scenes/player.tscn")
-const ZOMBIE_SCENE := preload("res://scenes/zombie.tscn")
+## Zombie-Arten (scenes/zombies/). Beim Spawnen wird in dieser Reihenfolge ausgewuerfelt
+## (Anteil je Runde steht in der Szene, Gruppe «Spawn»); der letzte Eintrag nimmt den Rest.
+## Neue Art: geerbte Szene von zombie.tscn anlegen und hier eintragen.
+const ZOMBIE_ARTEN: Array[PackedScene] = [
+	preload("res://scenes/zombies/zombie_panzer.tscn"),
+	preload("res://scenes/zombies/zombie_renner.tscn"),
+	preload("res://scenes/zombies/zombie.tscn"),
+]
 const MAX_DECALS := 140
 
 var level: Level
@@ -36,7 +43,7 @@ var defend_t := 0.0
 var extraction_open := false
 var gnomes := 0
 
-var tank_seen := false
+var seen_kinds := {}                     # Arten, die schon angekuendigt wurden
 var used_revive := false   # fuer den Auftrag "ohne Zweite Chance"
 
 var menu_open := false
@@ -137,13 +144,29 @@ func _end_round() -> void:
 
 
 func _spawn_zombie() -> void:
-	var z: Zombie = ZOMBIE_SCENE.instantiate()
+	var z: Zombie = pick_zombie(round_num).instantiate()
 	z.setup(self, round_num)
 	z.position = level.random_spawn() + Vector2(randf_range(-3, 3), randf_range(-3, 3))
 	level.entities.add_child(z)
-	if z.tank and not tank_seen:
-		tank_seen = true
-		announce("Achtung: Panzer-Zombie!", "Langsam, aber zäh – und er schlägt hart zu")
+	if z.ankuendigung != "" and not seen_kinds.has(z.art_name):
+		seen_kinds[z.art_name] = true
+		announce(z.ankuendigung, z.ankuendigung_text)
+
+
+## Waehlt die Zombie-Art fuer einen Spawn (siehe ZOMBIE_ARTEN).
+func pick_zombie(r: int) -> PackedScene:
+	for scene in ZOMBIE_ARTEN.slice(0, ZOMBIE_ARTEN.size() - 1):
+		if randf() < zombie_chance(scene, r):
+			return scene
+	return ZOMBIE_ARTEN[-1]
+
+
+## Anteil einer Art in Runde r (liest die Spawn-Werte aus der Szene).
+static func zombie_chance(scene: PackedScene, r: int) -> float:
+	var z: Zombie = scene.instantiate()
+	var c := z.chance(r)
+	z.free()
+	return c
 
 
 func on_zombie_killed(z: Zombie, melee: bool, award: bool) -> void:
@@ -151,11 +174,11 @@ func on_zombie_killed(z: Zombie, melee: bool, award: bool) -> void:
 	Save.contract_event("kill")
 	if melee:
 		Save.contract_event("melee_kill")
-	if z.tank:
-		Save.contract_event("tank_kill")
+	if z.auftrag_kill != "":
+		Save.contract_event(z.auftrag_kill)
 	if not award:
 		return
-	add_points((130 if melee else 60) + (G.TANK_KILL_BONUS if z.tank else 0))
+	add_points((130 if melee else 60) + z.kill_bonus)
 	# Power-ups nur dort fallen lassen, wo der Spieler auch hinkommt
 	if powerups_this_round < 4 and randf() < 0.045 and level.reached.has(level.to_cell(z.global_position)):
 		powerups_this_round += 1
