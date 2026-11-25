@@ -34,6 +34,7 @@ var block_t := 0.0
 
 func _ready() -> void:
 	get_tree().paused = false
+	Audio.musik("theme")
 	Save.ensure_active()
 	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
 	size = floor_map.get_used_rect().end

@@ -4,13 +4,13 @@ extends Node
 ## Soundeffekte:  Audio.sfx("player/hitHurt")
 ##   -> sucht res://audio/sfx/player/hitHurt.wav (oder .ogg)
 ##   Mit Position (Sound wird mit Abstand leiser): Audio.sfx("zombies/stoehnen", global_position)
-## Musik:         Audio.musik("dorf")  -> res://audio/musik/dorf.ogg (oder .wav), mit Ueberblenden
+## Musik:         Audio.musik("theme")  -> res://audio/music/theme.ogg (oder .wav), mit Ueberblenden
 ##                Audio.musik("")      -> Musik ausblenden
 ##
 ## Busse: Master > Musik, SFX (werden beim Start angelegt, falls es sie noch nicht gibt).
 
 const SFX_DIR := "res://audio/sfx/"
-const MUSIK_DIR := "res://audio/musik/"
+const MUSIK_DIR := "res://audio/music/"
 const ENDUNGEN := ["wav", "ogg", "mp3"]
 const POOL_GROESSE := 16          ## so viele Soundeffekte gleichzeitig
 const MIN_ABSTAND := 0.06         ## gleicher Sound hoechstens alle 0,06 s (kein Aufstauen)

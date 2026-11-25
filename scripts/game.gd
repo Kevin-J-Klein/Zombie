@@ -54,6 +54,7 @@ var won := false
 
 func _ready() -> void:
 	randomize()
+	Audio.musik("")   # Theme ausblenden (spaeter: Level-Musik)
 	level = $Level
 	level.build(self)
 

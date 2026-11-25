@@ -18,6 +18,7 @@ func _ready() -> void:
 	theme = UiStil.theme()
 	if Engine.is_editor_hint():
 		return
+	Audio.musik("theme")
 	get_tree().paused = false
 	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
 	slots_box = %Plaetze
