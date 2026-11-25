@@ -1,10 +1,10 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene format=3 uid="uid://b1j8or1rduhht"]
 
-[ext_resource type="Script" path="res://scripts/main_menu.gd" id="1_script"]
-[ext_resource type="Script" path="res://scripts/figur_vorschau.gd" id="2_figur"]
+[ext_resource type="Script" uid="uid://do1rbl4lvdamr" path="res://scripts/main_menu.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://c0rtafqpa6eg2" path="res://scripts/figur_vorschau.gd" id="2_figur"]
 [ext_resource type="PackedScene" path="res://scenes/slot_card.tscn" id="3_card"]
 
-[node name="MainMenu" type="Control"]
+[node name="MainMenu" type="Control" unique_id=1105061164]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -13,7 +13,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
 
-[node name="Hintergrund" type="ColorRect" parent="."]
+[node name="Hintergrund" type="ColorRect" parent="." unique_id=2103082057]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -23,8 +23,9 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0.109804, 0.164706, 0.109804, 1)
 
-[node name="Zombiereihe" type="HBoxContainer" parent="."]
+[node name="Zombiereihe" type="HBoxContainer" parent="." unique_id=236451750]
 layout_mode = 1
+anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -36,33 +37,38 @@ mouse_filter = 2
 theme_override_constants/separation = 26
 alignment = 1
 
-[node name="Zombie1" type="Control" parent="Zombiereihe"]
+[node name="Zombie1" type="Control" parent="Zombiereihe" unique_id=283860845]
 custom_minimum_size = Vector2(96, 132)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie1"]
+[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie1" unique_id=330342779]
 modulate = Color(1, 1, 1, 0.6)
 texture_filter = 1
 position = Vector2(48, 132)
 scale = Vector2(5, 5)
+animation = &"walk_down"
+frame = 3
+frame_progress = 0.45479652
 speed_scale = 0.6
 script = ExtResource("2_figur")
 gruppe = "zombie_small"
 im_spiel_abspielen = true
 anim = "walk_down"
-start_bild = 0
 
-[node name="Zombie2" type="Control" parent="Zombiereihe"]
+[node name="Zombie2" type="Control" parent="Zombiereihe" unique_id=618269021]
 custom_minimum_size = Vector2(96, 132)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie2"]
+[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie2" unique_id=1070965861]
 modulate = Color(1, 1, 1, 0.6)
 texture_filter = 1
 position = Vector2(48, 132)
 scale = Vector2(5, 5)
+animation = &"walk_down"
+frame = 4
+frame_progress = 0.45479652
 speed_scale = 0.6
 script = ExtResource("2_figur")
 gruppe = "zombie_axe"
@@ -70,16 +76,19 @@ im_spiel_abspielen = true
 anim = "walk_down"
 start_bild = 1
 
-[node name="Zombie3" type="Control" parent="Zombiereihe"]
+[node name="Zombie3" type="Control" parent="Zombiereihe" unique_id=2094651564]
 custom_minimum_size = Vector2(96, 132)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie3"]
+[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie3" unique_id=2044088677]
 modulate = Color(1, 1, 1, 0.6)
 texture_filter = 1
 position = Vector2(48, 132)
 scale = Vector2(5, 5)
+animation = &"walk_down"
+frame = 5
+frame_progress = 0.45479652
 speed_scale = 0.6
 script = ExtResource("2_figur")
 gruppe = "zombie_small"
@@ -87,16 +96,18 @@ im_spiel_abspielen = true
 anim = "walk_down"
 start_bild = 2
 
-[node name="Zombie4" type="Control" parent="Zombiereihe"]
+[node name="Zombie4" type="Control" parent="Zombiereihe" unique_id=1433983459]
 custom_minimum_size = Vector2(96, 132)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie4"]
+[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie4" unique_id=607470279]
 modulate = Color(1, 1, 1, 0.6)
 texture_filter = 1
 position = Vector2(48, 132)
 scale = Vector2(5, 5)
+animation = &"walk_down"
+frame_progress = 0.45479652
 speed_scale = 0.6
 script = ExtResource("2_figur")
 gruppe = "zombie_small"
@@ -104,16 +115,19 @@ im_spiel_abspielen = true
 anim = "walk_down"
 start_bild = 3
 
-[node name="Zombie5" type="Control" parent="Zombiereihe"]
+[node name="Zombie5" type="Control" parent="Zombiereihe" unique_id=6506927]
 custom_minimum_size = Vector2(96, 132)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie5"]
+[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie5" unique_id=368446156]
 modulate = Color(1, 1, 1, 0.6)
 texture_filter = 1
 position = Vector2(48, 132)
 scale = Vector2(5, 5)
+animation = &"walk_down"
+frame = 7
+frame_progress = 0.45479652
 speed_scale = 0.6
 script = ExtResource("2_figur")
 gruppe = "zombie_big"
@@ -121,16 +135,19 @@ im_spiel_abspielen = true
 anim = "walk_down"
 start_bild = 4
 
-[node name="Zombie6" type="Control" parent="Zombiereihe"]
+[node name="Zombie6" type="Control" parent="Zombiereihe" unique_id=2058000532]
 custom_minimum_size = Vector2(96, 132)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie6"]
+[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie6" unique_id=680032341]
 modulate = Color(1, 1, 1, 0.6)
 texture_filter = 1
 position = Vector2(48, 132)
 scale = Vector2(5, 5)
+animation = &"walk_down"
+frame = 2
+frame_progress = 0.45479652
 speed_scale = 0.6
 script = ExtResource("2_figur")
 gruppe = "zombie_small"
@@ -138,33 +155,38 @@ im_spiel_abspielen = true
 anim = "walk_down"
 start_bild = 5
 
-[node name="Zombie7" type="Control" parent="Zombiereihe"]
+[node name="Zombie7" type="Control" parent="Zombiereihe" unique_id=1864566296]
 custom_minimum_size = Vector2(96, 132)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie7"]
+[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie7" unique_id=322302673]
 modulate = Color(1, 1, 1, 0.6)
 texture_filter = 1
 position = Vector2(48, 132)
 scale = Vector2(5, 5)
+animation = &"walk_down"
+frame = 3
+frame_progress = 0.45479652
 speed_scale = 0.6
 script = ExtResource("2_figur")
 gruppe = "zombie_small"
 im_spiel_abspielen = true
 anim = "walk_down"
-start_bild = 0
 
-[node name="Zombie8" type="Control" parent="Zombiereihe"]
+[node name="Zombie8" type="Control" parent="Zombiereihe" unique_id=383281434]
 custom_minimum_size = Vector2(96, 132)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie8"]
+[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie8" unique_id=2085000933]
 modulate = Color(1, 1, 1, 0.6)
 texture_filter = 1
 position = Vector2(48, 132)
 scale = Vector2(5, 5)
+animation = &"walk_down"
+frame = 4
+frame_progress = 0.45479652
 speed_scale = 0.6
 script = ExtResource("2_figur")
 gruppe = "zombie_axe"
@@ -172,16 +194,19 @@ im_spiel_abspielen = true
 anim = "walk_down"
 start_bild = 1
 
-[node name="Zombie9" type="Control" parent="Zombiereihe"]
+[node name="Zombie9" type="Control" parent="Zombiereihe" unique_id=514291874]
 custom_minimum_size = Vector2(96, 132)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie9"]
+[node name="Figur" type="AnimatedSprite2D" parent="Zombiereihe/Zombie9" unique_id=690260383]
 modulate = Color(1, 1, 1, 0.6)
 texture_filter = 1
 position = Vector2(48, 132)
 scale = Vector2(5, 5)
+animation = &"walk_down"
+frame = 5
+frame_progress = 0.45479652
 speed_scale = 0.6
 script = ExtResource("2_figur")
 gruppe = "zombie_small"
@@ -189,8 +214,9 @@ im_spiel_abspielen = true
 anim = "walk_down"
 start_bild = 2
 
-[node name="Inhalt" type="VBoxContainer" parent="."]
+[node name="Inhalt" type="VBoxContainer" parent="." unique_id=1990807040]
 layout_mode = 1
+anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -580.0
@@ -199,7 +225,7 @@ offset_right = 580.0
 grow_horizontal = 2
 theme_override_constants/separation = 6
 
-[node name="Titel" type="Label" parent="Inhalt"]
+[node name="Titel" type="Label" parent="Inhalt" unique_id=1338677433]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.784314, 0.156863, 0.117647, 1)
 theme_override_colors/font_outline_color = Color(0.101961, 0.0392157, 0.0313726, 1)
@@ -208,33 +234,33 @@ theme_override_font_sizes/font_size = 64
 text = "ZOMBIE GAME"
 horizontal_alignment = 1
 
-[node name="Untertitel" type="Label" parent="Inhalt"]
+[node name="Untertitel" type="Label" parent="Inhalt" unique_id=1813831274]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.909804, 0.862745, 0.752941, 1)
 theme_override_font_sizes/font_size = 18
 text = "Wähle einen Spielstand. Das Spiel speichert automatisch."
 horizontal_alignment = 1
 
-[node name="Abstand" type="Control" parent="Inhalt"]
+[node name="Abstand" type="Control" parent="Inhalt" unique_id=115219375]
 custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
 
-[node name="Plaetze" type="HBoxContainer" parent="Inhalt"]
+[node name="Plaetze" type="HBoxContainer" parent="Inhalt" unique_id=568901693]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 20
 alignment = 1
 
-[node name="Platz1" parent="Inhalt/Plaetze" instance=ExtResource("3_card")]
+[node name="Platz1" parent="Inhalt/Plaetze" unique_id=1191378334 instance=ExtResource("3_card")]
 layout_mode = 2
 
-[node name="Platz2" parent="Inhalt/Plaetze" instance=ExtResource("3_card")]
+[node name="Platz2" parent="Inhalt/Plaetze" unique_id=1618534841 instance=ExtResource("3_card")]
 layout_mode = 2
 
-[node name="Platz3" parent="Inhalt/Plaetze" instance=ExtResource("3_card")]
+[node name="Platz3" parent="Inhalt/Plaetze" unique_id=1648928824 instance=ExtResource("3_card")]
 layout_mode = 2
 
-[node name="Beenden" type="Button" parent="."]
+[node name="Beenden" type="Button" parent="." unique_id=1785538810]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 1

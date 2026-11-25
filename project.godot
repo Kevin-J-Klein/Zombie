@@ -20,6 +20,7 @@ config/features=PackedStringArray("4.7", "GL Compatibility")
 G="*res://scripts/globals.gd"
 Save="*res://scripts/save.gd"
 Fade="*res://scripts/fade.gd"
+Audio="*res://scripts/audio.gd"
 
 [display]
 

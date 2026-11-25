@@ -389,6 +389,7 @@ func take_damage(amount: float) -> void:
 		armor -= absorbed
 		amount -= absorbed
 	hp -= amount
+	Audio.sfx("player/hitHurt")
 	game.on_player_hurt()
 	if hp <= 0.0:
 		hp = 0.0
