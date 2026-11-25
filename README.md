@@ -30,7 +30,7 @@ einen Shop, ein Auftragsbrett und den Wagen, mit dem man ins Level fährt.
 
 ## Charaktere
 
-Im Dorf laufen die Charaktere herum, die man gerade nicht spielt (Lamar schlendert über den Platz).
+Im Dorf laufen die Charaktere herum, die man gerade nicht spielt.
 Mit E ansprechen = zu diesem Charakter wechseln; er begrüsst einen dann («What's poppin', G?»). Alternativ
 wählt man im Haus am **Kleiderschrank** den Charakter für die nächste Partie. Jeder Charakter hat eine
 Lieblingswaffe (+10 % Schaden) und eine Spezialfähigkeit (Taste X), die ab Runde 1 bereit ist und nach dem
